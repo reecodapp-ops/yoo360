@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/prepare-static-routes.mjs",
+    "build": "tsc -b && tsc -p order-app/tsconfig.json && vite build && node scripts/prepare-static-routes.mjs && node scripts/build-orders.mjs",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "npm ci --prefix order-app --no-audit --no-fund"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

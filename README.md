@@ -4,7 +4,7 @@ This project retains the supplied Yoo 360 V0 website. The original Inter, Space 
 
 ## Focused additions
 
-Order a design links to the existing Yoo360 ordering application, where visitors choose Logo & Brand Visual Identity or Marketing & Print Design and continue to checkout. The hero contains only Order a design and Explore our work. Discuss a project remains in the navigation and footer and opens a separate five-field enquiry page. The footer's simulated email form is replaced with the real enquiry route. Existing ordering pages retain their established design.
+Order a design opens `/order-a-design` on the official website, where visitors choose Logo & Brand Visual Identity or Marketing & Print Design and continue to checkout. The hero contains only Order a design and Explore our work. Discuss a project remains in the navigation and footer and opens a separate five-field enquiry page. The footer's simulated email form is replaced with the real enquiry route. Existing ordering pages retain their established design.
 
 The enquiry page uses the original website's typography, colors, shapes and entrance timing. It collects name, optional company, email, project type and a short description. It validates inputs, retains them after failures, prevents repeated concurrent submissions and confirms only provider-accepted sends. Corporate work is scoped through a conversation rather than the fixed design-order catalog.
 
@@ -12,7 +12,7 @@ The enquiry page uses the original website's typography, colors, shapes and entr
 
 ## Search readiness
 
-The production build prerenders the real React home, enquiry, founding team and three individual profile pages into visible HTML, including accurate impact figures. JavaScript still mounts the original interactive site and animations. Each public page has its own title, description, canonical URL and social sharing metadata. Organization/WebSite/WebPage structured data describes the site; individual ProfilePage/Person data matches the visible member biographies and confirmed connections. The build emits robots.txt and a sitemap containing all six public pages. Unknown routes show a 404 page with noindex rather than duplicating the homepage.
+The production build prerenders the real React home, enquiry, founding team and three individual profile pages into visible HTML, including accurate impact figures. JavaScript still mounts the original interactive site and animations. Each public page has its own title, description, canonical URL and social sharing metadata. Organization/WebSite/WebPage structured data describes the site; individual ProfilePage/Person data matches the visible member biographies and confirmed connections. The build emits robots.txt and a sitemap containing all nine public pages. Unknown routes show a 404 page with noindex rather than duplicating the homepage.
 
 ## Founding team
 
@@ -39,6 +39,9 @@ The supplied Brand Mark White image is embedded unchanged in a black rounded-squ
 - Original global styles, font loading, page composition and animation settings are retained.
 - `node tests/project-enquiry.mjs` verifies honest client success/error handling.
 - `node tests/search-readiness.mjs` verifies readable static content, route-specific metadata, structured data, asset references, crawler access and sitemap contents.
+- `node tests/order-domain.mjs` checks official-domain order links, private indexing, static assets, the legacy icon URL and CSS isolation.
+- Package entry, draft progress, payment retry and motion lifecycle checks cover the copied customer interface.
+- `node tests/deployed-order-api.mjs --demo` is an opt-in live integration check that creates labelled demo records, stops before mutations if payments are live, and removes its 10 MB check upload.
 - Main production build includes TypeScript validation and prerendered pages.
 - Backend SQLite tests cover delivery receipts, validation, allowed origins, missing setup, failures, idempotency and hourly quotas.
 - Existing order-flow integration checks verify payment and brief behavior remain intact.
@@ -49,4 +52,4 @@ Browser and physical-device QA are unavailable. Visual matching is based on reta
 
 This release is prepared for the existing Vercel project that serves theyoo360.com from its connected GitHub repository. `vercel.json` selects Vite, runs the complete `npm run build` command and publishes `dist`. The prerendered home, enquiry, team and profile pages are served as distinct static pages, with extensionless URLs and no trailing slash. There is no catch-all rewrite to the homepage, so profile metadata and the custom 404 remain distinct.
 
-Confirm the existing GitHub repository, Vercel project, root directory and production branch before applying this release. Preserve the project's current domains and account settings. After the connected production branch is updated, verify the Vercel build and the real theyoo360.com pages, favicon, sharing image, sitemap and robots.txt. The separate ordering application remains the destination of Order a design; real payments and email delivery require its provider settings described above.
+Confirm the existing GitHub repository, Vercel project, root directory and production branch before applying this release. Preserve the project's current domains and account settings. After the connected production branch is updated, verify the Vercel build and the real theyoo360.com pages, favicon, sharing image, sitemap and robots.txt. The customer ordering frontend is built separately into `/order-a-design` with its existing Poppins styling and animations. Its routes, progress links and private resume links stay on the official hostname. The fixed `/api/design-orders/*` rewrite forwards to the existing ordering Worker, retaining its database, uploads, per-order access keys and payment provider configuration. Private responses are not cached, and private customer pages are excluded from indexing. The authenticated staff workspace remains on the original ordering Site. Real payments and email delivery require the provider settings described above.
