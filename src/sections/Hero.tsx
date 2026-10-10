@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
+import { ORDERS_URL } from "@/lib/links";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -41,17 +42,6 @@ export default function Hero() {
       <div className="pointer-events-none absolute top-1/2 -left-40 size-[360px] rounded-full bg-[#FFC700]/15 blur-3xl" />
 
       <div className="mx-auto max-w-7xl">
-        <motion.p
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          custom={0}
-          className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#131311]/12 px-4 py-1.5 text-xs font-semibold tracking-[0.18em] uppercase"
-        >
-          <span className="size-1.5 rounded-full bg-[#FFC700]" />
-          Creative-tech studio — Africa, for the world
-        </motion.p>
-
         <h1 className="font-display text-[13vw] leading-[0.95] font-bold tracking-[-0.03em] sm:text-[11vw] lg:text-[7.5rem]">
           <motion.span variants={fadeUp} initial="hidden" animate="show" custom={1} className="block">
             We design what
@@ -72,26 +62,22 @@ export default function Hero() {
           </motion.span>
         </h1>
 
-        <div className="mt-10 flex flex-col-reverse items-start justify-between gap-10 md:mt-14 md:flex-row md:items-end">
+        <div className="mt-6 flex flex-col items-start justify-between gap-6 md:mt-8 md:flex-row">
           <motion.div variants={fadeUp} initial="hidden" animate="show" custom={4} className="max-w-md">
-            <p className="text-base leading-relaxed text-[#131311]/65 md:text-lg">
-              Yoo360 elevates brands with creative design, innovative digital
-              tools and strategies built to grab attention, inspire — and grow
-              impact.
-            </p>
-            <div className="mt-7 flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <a
-                href="#contact"
+                href={ORDERS_URL}
                 className="group inline-flex items-center gap-2 rounded-full bg-[#131311] px-7 py-3.5 text-sm font-semibold text-[#F6F4EE] transition-colors hover:bg-[#FFC700] hover:text-[#131311]"
               >
-                Let's work together
+                Order a design
                 <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
               </a>
               <a
                 href="#work"
-                className="text-sm font-semibold underline decoration-[#FFC700] decoration-2 underline-offset-8 transition-colors hover:text-[#131311]/60"
+                className="group inline-flex items-center gap-2 rounded-full border border-[#131311]/20 px-7 py-3.5 text-sm font-semibold transition-colors hover:bg-[#FFC700] hover:border-[#FFC700]"
               >
                 Explore our work
+                <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
               </a>
             </div>
           </motion.div>

@@ -21,12 +21,12 @@ export default function Clients() {
       <div className="marquee-paused overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
         <div className="animate-marquee-fast flex w-max items-center gap-14 px-7">
           {row.map((c, i) => (
-            <div key={i} className="flex items-center gap-3 opacity-80 transition-opacity hover:opacity-100">
+            <div key={i} className="flex items-center gap-3">
               <img
                 src={`/assets/clients/${c}.png`}
                 alt={names[c] ?? c}
                 loading="lazy"
-                className="h-9 w-auto object-contain grayscale transition-all hover:grayscale-0"
+                className="h-9 w-auto object-contain brightness-0"
               />
             </div>
           ))}

@@ -1,20 +1,21 @@
 import { motion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
 
 const chapters = [
   {
-    era: "2021 — 2022",
+    era: "2021 to 2022",
     title: "The spark",
-    desc: "Where it all began — freelancing, side gigs, and creative ideas from campus dorms.",
+    desc: "It began with freelancing, side gigs and creative ideas from campus dorms.",
   },
   {
-    era: "2022 — 2024",
-    title: "The build-up",
+    era: "2022 to 2024",
+    title: "The growth",
     desc: "The YoographiX era. Teamwork, real client growth, and finding our creative rhythm.",
   },
   {
-    era: "2025 — today",
+    era: "2025 to today",
     title: "The shift & the rise",
-    desc: "A bold rebrand. Yoo360 is born — vision expanded, strategy sharpened, purpose unlocked.",
+    desc: "A bold rebrand. Yoo360 is born with a wider vision, sharper strategy and renewed purpose.",
   },
 ];
 
@@ -33,11 +34,14 @@ export default function Story() {
               there's a <em className="font-serif-accent font-normal italic text-[#C79A00]">why.</em>
             </h2>
             <p className="mt-6 max-w-md text-base leading-relaxed text-[#131311]/65">
-              We are a creative-tech studio born from late-night freelancing
-              and one big vision: to elevate brands in Africa and beyond with
+              We are a creative tech studio born from freelancing late at night
+              and one big vision: to elevate brands in East Africa and beyond with
               creative design, innovative digital tools, and strategies built
               to grab attention, inspire, and grow impact.
             </p>
+            <a href="/team" className="group mt-8 inline-flex items-center gap-2 rounded-full bg-[#131311] px-6 py-3 text-sm font-semibold text-[#F6F4EE] transition-colors hover:bg-[#FFC700] hover:text-[#131311] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#A17A00]">
+              Meet the team <ArrowUpRight aria-hidden="true" className="size-4 transition-transform duration-300 motion-reduce:transition-none group-hover:rotate-45" />
+            </a>
           </div>
 
           <ol className="relative space-y-2 border-l border-[#131311]/15 pl-8">
