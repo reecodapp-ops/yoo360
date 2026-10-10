@@ -1,0 +1,408 @@
+'use client';
+import React, { useEffect, useState, useRef } from 'react';
+import { orderRoute, orderApi } from '@/lib/routes';
+import { checkInitialPayment, retryInitialPayment, hasAcceptedPrompt } from '@/lib/payment-actions';
+import { cartForOrderEntry } from '@/lib/order-entry';
+import { Check, ChevronDown, ChevronLeft, Plus, Trash2, ShieldCheck, Smartphone, Info, Palette, Contact, LayoutTemplate, Image, Store, FileText, MessageCircle, Shapes, BookOpen, FolderCode, Upload, File, LoaderCircle, CheckCircle2, Clock3, XCircle, LockKeyhole, ExternalLink, Copy, Save, BriefcaseBusiness } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ADDONS, COUNTRIES, STATUSES, uuid, initialCart, newArtwork, cartSchema, price, money, amounts, lines, artworkPrice, customerSchema, normalizePhone, type Cart, type Customer, type Artwork } from '@/lib/catalog';
+import { checkoutFingerprint, parseOrderProgress, matchingOrderProgress, type OrderProgress } from '@/lib/order-progress';
+const icons: Record<string, React.ElementType> = { card: Contact, colors: Palette, social: Image, templates: LayoutTemplate, sign: Store, letter: FileText, voice: MessageCircle, layouts: Shapes, guide: BookOpen, source: FolderCode };
+type Config = {
+    mode: string;
+    providers: {
+        id: string;
+        name: string;
+        country: string;
+        currency: string;
+        decimals: number;
+    }[];
+    message?: string;
+};
+type RecordOrder = {
+    id: string;
+    reference: string;
+    cart: Cart;
+    customer: Customer;
+    total: number;
+    due: number;
+    paid: number;
+    share: number;
+    test: boolean;
+    paymentMode: string;
+    paymentStatus: string;
+    projectStatus: string;
+    briefStatus: string;
+    brief: Record<string, Record<string, string>>;
+    files: {
+        id: string;
+        name: string;
+        size: number;
+        artwork_id: string;
+    }[];
+    payments: {
+        id: string;
+        purpose: string;
+        usd_cents: number;
+        amount: string;
+        currency: string;
+        status: string;
+        created_at: string;
+        promptAccepted: boolean;
+    }[];
+    activity: {
+        id: string;
+        message: string;
+        created_at: string;
+    }[];
+    created_at: string;
+    updated_at: string;
+};
+function projectName(order: RecordOrder) { return order.brief.logo?.brandName?.trim() || order.customer.business || order.customer.name; }
+function draftFingerprint(cart: Cart, customer: Customer, share: number) { return checkoutFingerprint(cart, customer, share, normalizePhone(customer.phone, customer.country)); }
+function persistDraft(cart: Cart, customer: Customer, share: number) { sessionStorage.setItem('yoo-order-draft', JSON.stringify({ cart, customer, share })); }
+function rememberProgress(order: RecordOrder) { const progress: OrderProgress = { id: order.id, fingerprint: draftFingerprint(order.cart, order.customer, order.share), briefUnlocked: order.paid >= order.due }; sessionStorage.setItem('yoo-order-progress', JSON.stringify(progress)); return progress; }
+function persistOrderDraft(order: RecordOrder) { persistDraft(order.cart, order.customer, order.share); rememberProgress(order); }
+function BrandDefinitions() { return <svg width="0" height="0" aria-hidden="true" focusable="false" style={{ position: 'absolute' }}><defs><filter id="yoo-illustration-alpha" colorInterpolationFilters="sRGB"><feComponentTransfer><feFuncA type="linear" slope="12" intercept="-8" /></feComponentTransfer></filter></defs></svg>; }
+function BrandIllustration({ kind }: { kind: 'logo' | 'graphics' | 'money' }) {
+    const artwork = { logo: { width: 123.06, height: 123.06, left: -14.97, top: -15.70 }, graphics: { width: 122.10, height: 122.10, left: -12.42, top: -12.56 }, money: { width: 118.75, height: 178.89, left: -9.56, top: -40.80 } }[kind];
+    return <span className={kind === 'money' ? 'money-illustration' : 'service-illustration'} data-illustration={kind} aria-hidden="true"><span className="illustration-ink" style={{ maskImage: `url(/brand/${kind}-illustration.png)`, WebkitMaskImage: `url(/brand/${kind}-illustration.png)`, width: artwork.width + '%', height: artwork.height + '%', left: artwork.left + '%', top: artwork.top + '%' }} /></span>;
+}
+export function getToken(id: string) { if (typeof window === 'undefined')
+    return ''; const h = new URLSearchParams(window.location.hash.slice(1)); const key = h.get('key'); if (key) {
+    sessionStorage.setItem('yoo-key-' + id, key);
+    return key;
+} return sessionStorage.getItem('yoo-key-' + id) || ''; }
+function secureLink(path: string, id: string) { const key = getToken(id); return `${orderRoute(path)}/${id}${key ? '#key=' + key : ''}`; }
+async function api(path: string, method = 'GET', body?: unknown, id?: string): Promise<any> { const r = await fetch(orderApi(path), { method, headers: { ...(body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), ...(id ? { Authorization: 'Bearer ' + getToken(id) } : {}) }, ...(body !== undefined ? { body: body instanceof FormData ? body : JSON.stringify(body) } : {}), cache: 'no-store' }); const data: any = await r.json(); if (!r.ok)
+    throw new Error(data.error || 'Something went wrong. Please try again.'); return data; }
+function token() { return Array.from(crypto.getRandomValues(new Uint8Array(32)), x => x.toString(16).padStart(2, '0')).join(''); }
+export function Picker({ value, onChange, options, label, disabled = false }: {
+    value: string;
+    onChange: (s: string) => void;
+    options: {
+        value: string;
+        label: string;
+    }[];
+    label: string;
+    disabled?: boolean;
+}) { return <Select value={value} onValueChange={onChange} disabled={disabled}><SelectTrigger className="select-trigger" aria-label={label}><SelectValue placeholder={label}/></SelectTrigger><SelectContent className="select-popover" position="popper">{options.map(x => <SelectItem key={x.value} value={x.value}>{x.label}</SelectItem>)}</SelectContent></Select>; }
+function Field({ label, id, value, onChange, placeholder = '', required = false, area = false, type = 'text', autoComplete, hint, showRequiredMarker = true }: {
+    label: string;
+    id: string;
+    value: string;
+    onChange: (s: string) => void;
+    placeholder?: string;
+    required?: boolean;
+    area?: boolean;
+    type?: string;
+    autoComplete?: string;
+    hint?: string;
+    showRequiredMarker?: boolean;
+}) { return <div className="field"><label htmlFor={id}>{label}{required && showRequiredMarker ? ' *' : ''}</label>{area ? <textarea className="textarea" id={id} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} required={required} maxLength={5000}/> : <input className="input" id={id} type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} required={required} autoComplete={autoComplete} inputMode={type === 'tel' ? 'tel' : undefined} aria-describedby={hint ? id + '-hint' : undefined} maxLength={200}/>}{hint && <small className="muted" id={id + '-hint'}>{hint}</small>}</div>; }
+export function Notice({ children, error = false, success = false }: {
+    children: React.ReactNode;
+    error?: boolean;
+    success?: boolean;
+}) { return <div className={`alert ${error ? 'error' : ''} ${success ? 'success' : ''}`} role={error ? 'alert' : 'status'}>{success ? <CheckCircle2 /> : <Info />}<div>{children}</div></div>; }
+export function Header({ mode }: {
+    mode?: string;
+}) { return <header className="header"><a href="/" className="wordmark" aria-label="Yoo360 home"><img className="brand-logo" src="/brand/yoo360-primary-white.png" alt="Yoo360" width="2013" height="354" /></a><div className="header-right">{mode && mode !== 'live' && mode !== 'loading' && <span className="pill">{mode === 'demo' ? 'Preview · no charges' : mode === 'sandbox' ? 'Sandbox payments' : 'Payments unavailable'}</span>}<a className="website" href="https://www.theyoo360.com" target="_blank" rel="noreferrer">Yoo360 website<ExternalLink size={14}/></a></div></header>; }
+export function Footer() { return <footer className="footer"><span>© {new Date().getFullYear()} Yoo360</span><a href="https://yoo360-studio-orders.berton-thedezi.chatgpt.site/admin">Team workspace</a></footer>; }
+function Steps({ step, cart, customer, share, order, onNavigate, busy = false }: {
+    step: number; cart: Cart; customer: Customer; share: number; order?: RecordOrder; onNavigate?: () => void | boolean | Promise<void | boolean>; busy?: boolean;
+}) {
+    const [stored, setStored] = useState<OrderProgress | null>(null);
+    useEffect(() => { setStored(order ? rememberProgress(order) : parseOrderProgress(sessionStorage.getItem('yoo-order-progress'))); }, [order]);
+    const progress = order ? { id: order.id, fingerprint: draftFingerprint(order.cart, order.customer, order.share), briefUnlocked: order.paid >= order.due } : matchingOrderProgress(stored, draftFingerprint(cart, customer, share));
+    const steps = [{ label: 'Design', href: orderRoute('/order/' + cart.service) }, { label: 'Payment', href: progress ? secureLink('/payment-status', progress.id) : orderRoute('/checkout') }, { label: 'Brief', href: progress?.briefUnlocked ? secureLink('/project-brief', progress.id) : undefined }];
+    return <nav className="steps" aria-label="Order progress">{steps.map(({ label, href }, i) => {
+        const className = `step ${i === step ? 'current' : i < step ? 'complete' : ''}`;
+        const content = <><i>{i < step ? <Check size={12} /> : i + 1}</i>{label}</>;
+        return <React.Fragment key={label}>{i > 0 && <span className="step-divider" aria-hidden="true" />}{!href || busy ? <span className={className} aria-current={i === step ? 'step' : undefined} aria-disabled={true} title={!href ? 'Complete payment to open your project brief.' : undefined}>{content}</span> : <a className={className} href={href} aria-current={i === step ? 'step' : undefined} onClick={async e => { e.preventDefault(); if (order) persistOrderDraft(order); const result = await onNavigate?.(); if (result !== false) window.location.assign(href); }}>{content}</a>}</React.Fragment>;
+    })}</nav>;
+}
+function Includes() { return <details><summary>All inclusions<ChevronDown size={15}/></summary><div className="included-list"><p><Check size={14}/>Logo design</p>{ADDONS.map(x => <p key={x.id}><Check size={14}/>{x.name}</p>)}<p><Check size={14}/>Complimentary branded-product mockups</p></div></details>; }
+function Production({ cart, setCart }: {
+    cart: Cart;
+    setCart: (c: Cart) => void;
+}) { const p = cart.production; const change = (k: string, v: string) => setCart({ ...cart, production: { ...p, [k]: v } }); return <section className="production"><label className="check-label"><Checkbox className="checkbox" checked={p.enabled} onCheckedChange={v => setCart({ ...cart, production: { ...p, enabled: v === true } })}/>Add Physical Printing Services</label>{p.enabled && <div className="production-fields fade-in"><div className="field"><label>Location</label><Picker value={p.location} onChange={v => change('location', v)} label="Production location" options={['Kampala', 'Goma', 'Dar es Salaam', 'Other'].map(x => ({ value: x, label: x }))}/></div><div className="two"><Field label="What needs to be produced?" id="production-item" value={p.item} onChange={v => change('item', v)} placeholder="Business cards, posters…"/><Field label="Estimated quantity" id="production-quantity" value={p.quantity} onChange={v => change('quantity', v)} placeholder="e.g. 200"/></div><Field label="Size and material, if known" id="production-material" value={p.material} onChange={v => change('material', v)} placeholder="e.g. A3, glossy paper"/><Field label="Special instructions (optional)" id="production-notes" value={p.notes} onChange={v => change('notes', v)} area/><Notice>Printing or production: quoted separately. Your design payment does not cover physical production.</Notice></div>}</section>; }
+function Summary({ cart, checkout = false, share = 60, children, onReview }: {
+    cart: Cart;
+    checkout?: boolean;
+    share?: number;
+    children?: React.ReactNode;
+    onReview?: () => void;
+}) { const n = amounts(price(cart), share); return <aside className={`summary ${checkout ? 'checkout-summary' : ''}`}>{!checkout && <><div className="summary-label">Design total</div><div className="total mono" aria-live="polite">{money(n.total)}</div></>}{children || <a className="primary" href={orderRoute('/checkout')} onClick={onReview}>Review order</a>}<div className="summary-items">{checkout ? <><div className="summary-row"><span>Design total</span><strong>{money(n.total)}</strong></div><div className="summary-row"><span>Remaining balance</span><strong>{money(n.balance)}</strong></div></> : <><div className="summary-row"><span>{cart.service === 'logo' ? (cart.mode === 'bundle' ? 'Complete branding' : 'Basic logo') : `${cart.artworks.length} design project${cart.artworks.length === 1 ? '' : 's'}`}</span><strong>{cart.service === 'logo' && cart.mode === 'basic' && cart.addons.length > 0 ? `${cart.addons.length} extras` : ''}</strong></div></>}{cart.production.enabled && <div className="summary-row"><span>Printing / production</span><strong>Separate quote</strong></div>}</div><div className="summary-note"><ShieldCheck /><span>{checkout ? 'Your project brief opens after payment confirmation.' : 'Flexible Payment: Pay 60% to start.'}</span></div>{checkout && n.balance > 0 && <p className="note">The balance is due after your approval, before final files are released.</p>}</aside>; }
+function Logo({ cart, setCart }: {
+    cart: Cart;
+    setCart: (c: Cart) => void;
+}) { const basic = cart.mode === 'basic'; return <><div className="stack">{basic && <button className="switch-offer" onClick={() => setCart({ ...cart, mode: 'bundle' })}><span>Complete branding</span><b>$199.90</b></button>}<section className="panel offer" data-reveal key={cart.mode}><div className="offer-top"><div className="offer-heading"><h2>{basic ? 'Basic logo' : 'Complete branding'}</h2>{!basic && <span className="saving" aria-label="$100 package saving">−$100</span>}</div><div className="offer-pricing"><div className="price mono">{basic ? '$30' : '$199.90'}</div>{!basic && <del className="old mono" aria-label="Regular price $299.90">$299.90</del>}</div></div><div className="offer-list">{(basic ? ['Logo design or refresh', 'PNG, JPG, PDF + color versions', '1 revision'] : ['Logo & business essentials', 'Social designs & templates', 'Brand guide & editable files']).map(t => <p key={t}><Check />{t}</p>)}</div>{!basic && <Includes />}</section>{!basic && <button className="switch-offer basic-logo-option" data-reveal aria-label="Basic logo, $30" onClick={() => setCart({ ...cart, mode: 'basic' })}><span>Just the logo</span><span className="basic-price-tag mono" aria-hidden="true">$30</span></button>}</div>{basic && <><p className="section-label">Optional extras</p><div className="addon-grid">{ADDONS.map(a => { const Icon = icons[a.icon]; const selected = cart.addons.includes(a.id); return <label className={`addon ${selected ? 'selected' : ''}`} data-reveal key={a.id}><Icon /><span className="addon-copy">{a.name}<small>+{money(a.cents)}</small></span><Checkbox aria-label={a.name} className="checkbox" checked={selected} onCheckedChange={v => setCart({ ...cart, addons: v ? [...cart.addons, a.id] : cart.addons.filter(x => x !== a.id) })}/></label>; })}</div></>}<p className="note">Free product mockups included.</p><Production cart={cart} setCart={setCart}/></>; }
+function Graphics({ cart, setCart }: {
+    cart: Cart;
+    setCart: (c: Cart) => void;
+}) { const update = (id: string, patch: Partial<Artwork>) => setCart({ ...cart, artworks: cart.artworks.map(a => a.id === id ? { ...a, ...patch } : a) }); return <><div className="stack">{cart.artworks.map((a, i) => <section className="panel artwork" data-reveal key={a.id}><div className="artwork-top"><div className="artwork-label"><input className="artwork-name" id={'artwork-' + a.id} aria-label={`Design Project ${i + 1} name`} value={a.name} onChange={e => update(a.id, { name: e.target.value })} placeholder={`Design Project ${i + 1}`} maxLength={90} /></div><div className="artwork-price mono"><span aria-live="polite">{money(artworkPrice(a))}</span>{cart.artworks.length > 1 && <button className="icon-button" aria-label={`Remove design project ${i + 1}`} onClick={() => setCart({ ...cart, artworks: cart.artworks.filter(x => x.id !== a.id) })}><Trash2 size={17}/></button>}</div></div><div className="artwork-options">{[['print', 'High-Res Print Files'], ['message', 'Ad Copy & Slogans'], ['priority', 'Rush Delivery (24-48h)']].map(([key, label]) => <label className="option-label" key={key}><Checkbox className="checkbox" checked={a[key as 'print']} onCheckedChange={v => update(a.id, { [key]: v === true })}/><span>{label}</span><small>+$5</small></label>)}</div></section>)}<button className="secondary add-artwork" onClick={() => setCart({ ...cart, artworks: [...cart.artworks, newArtwork()] })} disabled={cart.artworks.length >= 100}><Plus size={17}/>Add another design project</button></div><Production cart={cart} setCart={setCart}/></>; }
+function Checkout({ cart, customer, setCustomer, share, setShare, config }: {
+    cart: Cart;
+    customer: Customer;
+    setCustomer: (c: Customer) => void;
+    share: number;
+    setShare: (n: number) => void;
+    config: Config;
+}) {
+    const [busy, setBusy] = useState(false), [error, setError] = useState(''), [quote, setQuote] = useState<any>(null);
+    const identity = useRef<{
+        requestKey: string;
+        accessKey: string;
+        fingerprint: string;
+    } | null>(null);
+    const change = (k: string, v: string | boolean) => setCustomer({ ...customer, [k]: v });
+    const total = price(cart);
+    const providers = config.providers.filter(x => x.country === customer.country);
+    useEffect(() => { setQuote(null); if (config.mode === 'demo' || !customer.provider)
+        return; let canceled = false; api('payment-config', 'POST', { country: customer.country, provider: customer.provider, total, share }).then(x => { if (!canceled)
+        setQuote(x); }).catch(e => { if (!canceled)
+        setQuote({ error: e.message }); }); return () => { canceled = true; }; }, [customer.country, customer.provider, total, share, config.mode]);
+    async function place(e: React.FormEvent) { e.preventDefault(); setError(''); const checked = customerSchema.safeParse(customer); if (!checked.success) {
+        setError(checked.error.issues[0].message);
+        return;
+    } const existing = matchingOrderProgress(parseOrderProgress(sessionStorage.getItem('yoo-order-progress')), draftFingerprint(cart, customer, share)); if (existing && getToken(existing.id)) { window.location.assign(secureLink('/payment-status', existing.id)); return; } if (config.mode !== 'demo' && !quote?.quoteId) {
+        setError('Choose an available network and wait for the local-currency payment quote.');
+        return;
+    } setBusy(true); try {
+        const fingerprint = JSON.stringify({ cart, customer, share });
+        if (!identity.current || identity.current.fingerprint !== fingerprint)
+            identity.current = { requestKey: uuid(), accessKey: token(), fingerprint };
+        const data = await api('orders', 'POST', { cart, customer, share, requestKey: identity.current.requestKey, accessKey: identity.current.accessKey, quoteId: quote?.quoteId });
+        sessionStorage.setItem('yoo-key-' + data.id, identity.current.accessKey);
+        sessionStorage.setItem('yoo-order-progress', JSON.stringify({ id: data.id, fingerprint: draftFingerprint(cart, customer, share), briefUnlocked: false }));
+        try {
+            await api(`orders/${data.id}/payment`, 'POST', { purpose: 'initial' }, data.id);
+        }
+        catch (e) {
+            sessionStorage.setItem('yoo-payment-error-' + data.id, (e as Error).message);
+        }
+        window.location.assign(secureLink('/payment-status', data.id));
+    }
+    catch (e) {
+        setError((e as Error).message);
+    }
+    finally {
+        setBusy(false);
+    } }
+    return <><Steps step={1} cart={cart} customer={customer} share={share} busy={busy} onNavigate={() => persistDraft(cart, customer, share)}/><a className="back" href={orderRoute('/order/' + cart.service)}><ChevronLeft size={17}/>Edit your design</a><div className="page-head" data-reveal><h1>Secure Checkout</h1></div><form onSubmit={place}><div className="work-grid"><div className="stack"><section className="panel checkout-panel" data-reveal><div className="checkout-lines">{lines(cart).map((l, i) => <div className="checkout-line" key={i}><div>{l.name}<small>{l.detail}</small></div><strong>{money(l.cents)}</strong></div>)}</div>{cart.service === 'logo' && cart.mode === 'bundle' && <div style={{ marginTop: 22 }}><Includes /></div>}<div className="rule"/><div className="checkout-line"><span>Design total</span><strong>{money(total)}</strong></div>{cart.production.enabled && <p className="note">Printing / production in {cart.production.location}: quoted separately.</p>}</section><section className="panel checkout-form" data-reveal><h2 className="form-title"><Smartphone />Mobile Money Checkout</h2><div className="two"><div className="field"><label>Country</label><Picker value={customer.country} onChange={v => setCustomer({ ...customer, country: v, provider: '', phone: '' })} label="Mobile Money country" options={COUNTRIES.map(c => ({ value: c.id, label: c.name }))}/></div><div className="field"><label>Network</label><Picker value={config.mode === 'demo' ? 'demo' : customer.provider} onChange={v => change('provider', v)} label={config.mode === 'demo' ? 'Test wallet' : 'Choose a network'} disabled={config.mode === 'demo' || !providers.length} options={config.mode === 'demo' ? [{ value: 'demo', label: 'Test wallet (no collection)' }] : providers.map(p => ({ value: p.id, label: p.name }))}/></div></div><Field label="Phone Number for Payment" showRequiredMarker={false} id="phone" type="tel" value={customer.phone} onChange={v => change('phone', v)} placeholder={'+' + COUNTRIES.find(c => c.id === customer.country)?.prefix + '…'} required autoComplete="tel" hint="Enter the number linked to your Mobile Money account."/>{config.mode === 'demo' ? <p className="preview-note" role="status"><Info size={14}/>Preview mode · No payment prompt will be sent and no money collected.</p> : !providers.length ? <Notice>{config.message || 'Mobile Money is not yet available for this country.'}</Notice> : <p className="note">Authorize the payment on your phone. Yoo360 never asks for your Mobile Money PIN.</p>}<RadioGroup className="payment-choices" value={String(share)} onValueChange={v => setShare(Number(v))} aria-label="Payment amount">{[60, 100].map(s => <label key={s} className={`pay-option ${share === s ? 'active' : ''}`}><RadioGroupItem value={String(s)}/><span>{s === 60 ? 'Pay Deposit (60%)' : 'Pay in Full'}<b className="mono">{money(amounts(total, s).due)}</b><small>{s === 60 ? `Start your project now. Pay the remaining ${money(amounts(total, s).balance)} when the design is ready.` : 'Clear the balance immediately.'}</small></span></label>)}</RadioGroup>{quote?.error && <Notice error>{quote.error}</Notice>}{quote?.quoteId && <Notice>Amount to authorize: <b>{quote.amount} {quote.currency}</b>. Quote valid for 5 minutes.</Notice>}</section>{error && <Notice error>{error}</Notice>}</div><Summary cart={cart} checkout share={share}><button className="primary" type="submit" disabled={busy || config.mode === 'disabled' || config.mode === 'loading' || (config.mode !== 'demo' && !quote?.quoteId)}>{busy ? <><LoaderCircle className="spin" size={17}/>Preparing order</> : config.mode === 'loading' ? 'Loading payment options' : `Pay ${money(amounts(total, share).due)} Now`}</button></Summary></div></form></>;
+}
+function useOrder(id: string) { const [order, setOrder] = useState<RecordOrder | null>(null), [error, setError] = useState(''), [loading, setLoading] = useState(true); async function reload() { try {
+    getToken(id);
+    const x = await api(`orders/${id}`, 'GET', undefined, id);
+    setOrder(x);
+    setError('');
+    return x;
+}
+catch (e) {
+    setError((e as Error).message);
+}
+finally {
+    setLoading(false);
+} } useEffect(() => { reload(); }, [id]); return { order, setOrder, error, setError, loading, reload }; }
+function AccessLoading({ loading, error }: {
+    loading: boolean;
+    error: string;
+}) { return loading ? <div className="loading"><LoaderCircle className="spin" style={{ margin: 'auto' }}/>Loading your order</div> : <div className="state-wrap"><Notice error>{error || 'This order is unavailable. Open your private order link to continue.'}</Notice><a className="secondary" href={orderRoute('/')} style={{ marginTop: 20 }}>Back to designs</a></div>; }
+function ResumeLink({ id }: {
+    id: string;
+}) { const [copied, setCopied] = useState(false); return <div className="resume"><button className="text-button" onClick={async () => { const url = window.location.origin + secureLink('/order', id); try {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+}
+catch {
+    window.prompt('Copy your private order link', url);
+} }}><Copy size={15}/>{copied ? 'Private link copied' : 'Copy private order link'}</button><p className="note">Keep this link safe. Anyone with it can access your order and brief.</p></div>; }
+function PaymentStatus({ id }: { id: string }) {
+    const { order, error, loading, reload, setError, setOrder } = useOrder(id);
+    const [action, setAction] = useState<'check' | 'resend' | null>(null);
+    const [message, setMessage] = useState('');
+    const requestActive = useRef(false);
+    useEffect(() => {
+        if (!order || order.paymentMode === 'demo' || order.paymentStatus !== 'PENDING' || order.paid >= order.due) return;
+        let canceled = false;
+        const check = async () => {
+            if (requestActive.current || document.visibilityState === 'hidden') return;
+            requestActive.current = true;
+            try {
+                await api(`orders/${id}/verify`, 'POST', {}, id);
+                const next = await api(`orders/${id}`, 'GET', undefined, id);
+                if (!canceled) { setOrder(next); setError(''); }
+            } catch (e) { if (!canceled) setError((e as Error).message); }
+            finally { requestActive.current = false; }
+        };
+        void check();
+        const timer = setInterval(check, 5000);
+        return () => { canceled = true; clearInterval(timer); };
+    }, [order?.paymentStatus, order?.paymentMode, order?.paid, order?.due, id]);
+    async function run(kind: 'check' | 'resend') {
+        if (!order) return;
+        if (requestActive.current) { setMessage('Checking the current payment request. Please try again in a moment.'); return; }
+        requestActive.current = true; setAction(kind); setError(''); setMessage('');
+        try {
+            if (kind === 'check') {
+                const next = await checkInitialPayment(api, id, order.paymentMode);
+                setOrder(next);
+                if (next.paid < next.due) setMessage(next.paymentStatus === 'PENDING' ? 'We’re still waiting for confirmation. This page will update automatically.' : 'Payment has not been confirmed. Please request a new prompt to try again.');
+            } else {
+                const result = await retryInitialPayment(api, id, q => window.confirm(`Authorize ${q.amount} ${q.currency} for this payment?`));
+                setOrder(result.order as RecordOrder); setMessage(result.message);
+            }
+        } catch (e) { await reload(); setError((e as Error).message); }
+        finally { requestActive.current = false; setAction(null); }
+    }
+    if (!order) return <AccessLoading loading={loading} error={error}/>;
+    const simulation = order.paymentMode === 'demo', paid = order.paid >= order.due, pending = order.paymentStatus === 'PENDING';
+    const accepted = hasAcceptedPrompt(order);
+    const phone = '+' + normalizePhone(order.customer.phone, order.customer.country);
+    return <><Steps step={1} cart={order.cart} customer={order.customer} share={order.share} order={order} busy={!!action}/><div className="state-wrap payment-wait fade-in"><div className="state-icon">{paid ? <CheckCircle2 size={34}/> : pending ? <Smartphone size={34}/> : <XCircle size={34}/>}</div><h1>{paid ? (simulation ? 'Preview Payment Completed' : order.test ? 'Sandbox Payment Confirmed' : 'Payment Confirmed') : pending || simulation ? 'Check Your Phone' : 'Payment Not Completed'}</h1>{paid ? <p>Your order is saved. Tell us about your project to get it ready for the Yoo360 team.</p> : simulation ? <><p className="payment-subheading">Previewing a payment to <span className="payment-phone">{phone}</span>.</p><p>No payment request was sent. Use the button below to simulate confirmation and continue to your project brief.</p></> : order.test && pending ? <><p className="payment-subheading">Sandbox request prepared for <span className="payment-phone">{phone}</span>.</p><p>No real money will be collected. This page will update when the sandbox provider confirms the transaction.</p></> : pending && accepted ? <><p className="payment-subheading">We’ve sent a payment request to <span className="payment-phone">{phone}</span>.</p><p>Please open the message on your phone and enter your PIN to authorize the transaction. The page will update automatically once confirmed.</p></> : pending ? <><p>We’re checking the payment request for <span className="payment-phone">{phone}</span>.</p><p>Your order is saved. If the prompt hasn’t arrived, use Resend Payment Prompt to retry safely.</p></> : <p>The payment was not completed. Request a new prompt to try again.</p>}<p className="payment-amount mono">Amount: {money(order.due)}</p>{order.test && <p className="preview-note" role="status">{simulation ? 'Preview mode · No money collected. Completion is simulated.' : 'Sandbox mode · No real money collected.'}</p>}{error && <Notice error>{error}</Notice>}{message && <p className="payment-feedback" role="status">{message}</p>}<div className="actions payment-actions">{paid ? <a className="primary" href={secureLink('/project-brief', id)}>Complete project brief</a> : <><button className="secondary" disabled={!!action} onClick={() => run('resend')}>{action === 'resend' ? <><LoaderCircle className="spin" size={17}/>Checking request…</> : 'Resend Payment Prompt'}</button><button className="primary" disabled={!!action} onClick={() => run('check')}>{action === 'check' ? <><LoaderCircle className="spin" size={17}/>Checking payment…</> : 'I have completed the payment'}</button></>}</div>{!paid && simulation && <small className="simulation-caption">“I have completed the payment” simulates a successful payment in this preview.</small>}<a className="payment-order-link" href={secureLink('/order', id)}>View order</a><ResumeLink id={id}/></div></>;
+}
+const logoFields = [['business', 'Business', 'brandName', 'Brand name exactly as it should appear', 'e.g. Esther’s Market', true], ['business', 'Business', 'businessDescription', 'What does your business do?', 'Products or services you offer', true], ['business', 'Business', 'audience', 'Who are your customers?', 'Who you serve and where', true], ['identity', 'Identity', 'communicate', 'What should your brand communicate?', 'What should people think or feel?', true], ['identity', 'Identity', 'personality', 'Three words for your brand personality', 'e.g. friendly, reliable, fresh', true], ['identity', 'Identity', 'tagline', 'Slogan or tagline (optional)', '', false], ['visual', 'Visual direction', 'colors', 'Preferred colors (optional)', '', false], ['visual', 'Visual direction', 'avoid', 'Colors or styles to avoid (optional)', '', false], ['visual', 'Visual direction', 'references', 'Examples or brands you like (optional)', 'Links or names', false], ['usage', 'Usage', 'usage', 'Where will you use the logo?', 'Shop sign, social media, packaging…', true], ['usage', 'Usage', 'instructions', 'Other instructions (optional)', '', false]] as const;
+const artFields = [['purpose', 'What is this design project for?', 'An event, promotion, announcement…', true], ['message', 'What information should appear?', 'Names, dates, location, prices, contact details', true], ['audience', 'Who should see it?', 'Your intended customers or audience', true], ['style', 'Preferred colors or style (optional)', '', false]] as const;
+function FileUploads({ order, artworkId, onChange, onError }: {
+    order: RecordOrder;
+    artworkId: string;
+    onChange: () => Promise<unknown>;
+    onError: (s: string) => void;
+}) { const [busy, setBusy] = useState(false); async function upload(files: FileList | null) { if (!files)
+    return; setBusy(true); onError(''); try {
+    for (const file of Array.from(files)) {
+        if (file.size > 10 * 1024 * 1024)
+            throw new Error(`${file.name} is larger than 10 MB.`);
+        const form = new FormData();
+        form.append('file', file);
+        form.append('artworkId', artworkId);
+        await api(`orders/${order.id}/files`, 'POST', form, order.id);
+    }
+    await onChange();
+}
+catch (e) {
+    onError((e as Error).message);
+}
+finally {
+    setBusy(false);
+} } return <div><label className="uploads"><Upload size={23}/><span>{busy ? 'Uploading…' : 'Add logos, images or references'}</span><small className="muted">JPG, PNG, WebP, PDF, DOCX or TXT · 10 MB per file</small><input type="file" aria-label={'Upload files for ' + artworkId} accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.txt" multiple disabled={busy} onChange={e => { upload(e.target.files); e.target.value = ''; }}/></label><div className="file-list" style={{ marginTop: 12 }}>{order.files.filter(f => f.artwork_id === artworkId).map(f => <div className="file-row" key={f.id}><a href={`/api/design-orders/orders/${order.id}/files/${f.id}?key=${getToken(order.id)}`} target="_blank" rel="noreferrer"><File size={16}/>{f.name}</a><button className="icon-button" aria-label={'Remove ' + f.name} onClick={async () => { try {
+    await api(`orders/${order.id}/files/${f.id}`, 'DELETE', undefined, order.id);
+    await onChange();
+}
+catch (e) {
+    onError((e as Error).message);
+} }}><Trash2 size={15}/></button></div>)}</div></div>; }
+function ProjectBrief({ id }: {
+    id: string;
+}) {
+    const { order, error, loading, reload, setError } = useOrder(id);
+    const [brief, setBrief] = useState<Record<string, Record<string, string>>>({}), [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [saved, setSaved] = useState('');
+    useEffect(() => { if (order && !ready) {
+        setBrief(order.brief || {});
+        setReady(true);
+    } }, [order, ready]);
+    const update = (section: string, key: string, value: string) => { setBrief(b => ({ ...b, [section]: { ...b[section], [key]: value } })); setSaved('Unsaved changes'); };
+    async function save(submit = false) { setBusy(true); setError(''); try {
+        await api(`orders/${id}/brief`, 'PUT', { brief, submit }, id);
+        setSaved(submit ? 'Brief submitted' : 'Draft saved');
+        await reload();
+        return true;
+    }
+    catch (e) {
+        setError((e as Error).message);
+        return false;
+    }
+    finally {
+        setBusy(false);
+    } }
+    if (!order)
+        return <AccessLoading loading={loading} error={error}/>;
+    if (order.paid < order.due)
+        return <div className="state-wrap"><Notice>Your project brief opens after payment confirmation.</Notice><a className="primary" href={secureLink('/payment-status', id)} style={{ marginTop: 20 }}>Go to payment</a></div>;
+    if (order.briefStatus === 'submitted')
+        return <><Steps step={2} cart={order.cart} customer={order.customer} share={order.share} order={order}/><div className="state-wrap"><div className="state-icon"><CheckCircle2 size={34}/></div><h1>Project brief submitted</h1><p>Your {order.test ? 'test ' : ''}project details are saved. Your order is ready for the Yoo360 team to review.</p><div className="actions"><a className="primary" href={secureLink('/order', id)}>View project status</a></div>{order.test && <div style={{ marginTop: 24 }}><Notice>This is a test order. No paid project has been started.</Notice></div>}<ResumeLink id={id}/></div></>;
+    const logo = brief.logo || {};
+    return <><Steps step={2} cart={order.cart} customer={order.customer} share={order.share} order={order} busy={busy} onNavigate={() => saved === 'Unsaved changes' ? save(false) : undefined}/><div className="brief-container"><a className="back" href={secureLink('/order', id)}><ChevronLeft size={17}/>Your order</a><div className="page-head" data-reveal><div className="eyebrow">{order.reference}{order.test ? ' · TEST ORDER' : ''}</div><h1>Tell us about your project</h1><p>Save a draft at any time. Use your private order link to continue later.</p></div>{order.test && <div style={{ marginBottom: 24 }}><Notice>Preview only. Test briefs are saved for review, and do not start a real project.</Notice></div>}<form onSubmit={e => { e.preventDefault(); save(true); }}><div className="brief-sections">{order.cart.service === 'logo' ? ['business', 'identity', 'visual', 'usage'].map((s, i) => <section className="panel brief-section" data-reveal key={s}><h2 className="brief-heading"><span className="number">0{i + 1}</span>{logoFields.find(x => x[0] === s)?.[1]}</h2>{logoFields.filter(x => x[0] === s).map(([, , key, label, placeholder, required]) => <Field key={key} id={'brief-' + key} label={label} value={logo[key] ?? (key === 'brandName' ? order.customer.business : '')} onChange={v => update('logo', key, v)} placeholder={placeholder} required={required} area={['businessDescription', 'communicate', 'instructions', 'usage'].includes(key)}/>)}{s === 'identity' && <div className="field"><label>New brand or existing logo?</label><Picker label="Logo project type" value={logo.logoType || 'new'} onChange={v => update('logo', 'logoType', v)} options={[{ value: 'new', label: 'New brand / new logo' }, { value: 'improve', label: 'Improve my existing logo' }]}/></div>}{s === 'visual' && <>{logo.logoType === 'improve' && <Notice>Add your existing logo so we can understand what to improve.</Notice>}<FileUploads order={order} artworkId="logo" onChange={reload} onError={setError}/></>}{s === 'usage' && (order.cart.mode === 'bundle' || order.cart.addons.some(a => ['card', 'social', 'sign', 'letter'].includes(a))) && <Field id="asset-details" label="Details for your branding assets (optional)" value={logo.assetDetails || ''} onChange={v => update('logo', 'assetDetails', v)} placeholder="Business card contacts, social handles, signboard wording…" area/>}</section>) : order.cart.artworks.map((a, i) => { const section = brief[a.id] || {}; return <section className="panel brief-section" data-reveal key={a.id}><h2 className="brief-heading"><span className="number">{String(i + 1).padStart(2, '0')}</span>{a.name.trim() || 'Design Project ' + (i + 1)}</h2>{artFields.map(([key, label, placeholder, required]) => <Field id={a.id + '-' + key} key={key} label={key === 'message' && a.message ? 'What is the business goal and source information?' : label} value={section[key] || ''} onChange={v => update(a.id, key, v)} placeholder={key === 'message' && a.message ? 'What do you want people to do? We will help write the message.' : placeholder} required={required} area={key !== 'audience'}/>)}{a.print && <Field id={a.id + '-size'} label="Printed size, if known (optional)" value={section.size || ''} onChange={v => update(a.id, 'size', v)} placeholder="e.g. A4"/>}<FileUploads order={order} artworkId={a.id} onChange={reload} onError={setError}/></section>; })}</div>{error && <div style={{ marginTop: 20 }}><Notice error>{error}</Notice></div>}<div className="brief-actions"><small role="status">{saved || 'Your draft is private'}</small><div className="actions"><button className="secondary" type="button" disabled={busy} onClick={() => save(false)}><Save size={15}/>Save draft</button><button className="primary" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Submit project brief'}</button></div></div></form><ResumeLink id={id}/></div></>;
+}
+function OrderStatus({ id }: {
+    id: string;
+}) { const { order, error, loading, reload, setError } = useOrder(id); const [busy, setBusy] = useState(false); useEffect(() => { if (!order || order.paymentMode === 'demo' || order.paymentStatus !== 'PENDING')
+    return; const timer = setInterval(() => { api(`orders/${id}/verify`, 'POST', {}, id).then(reload).catch(e => setError(e.message)); }, 5000); return () => clearInterval(timer); }, [order?.paymentStatus, order?.paymentMode, id]); if (!order)
+    return <AccessLoading loading={loading} error={error}/>; const at = STATUSES.indexOf(order.projectStatus); async function balance() { if (!order)
+    return; setBusy(true); try {
+    const q = await api(`orders/${id}/balance-quote`, 'POST', {}, id);
+    if (order.paymentMode !== 'demo' && !window.confirm(`Authorize ${q.amount} ${q.currency} to settle the remaining balance?`))
+        return;
+    await api(`orders/${id}/payment`, 'POST', { purpose: 'balance', quoteId: q.quoteId }, id);
+    await reload();
+}
+catch (e) {
+    setError((e as Error).message);
+}
+finally {
+    setBusy(false);
+} } return <><Steps step={order.paid >= order.due ? 2 : 1} cart={order.cart} customer={order.customer} share={order.share} order={order} busy={busy}/><div className="page-head" data-reveal><div className="eyebrow">{order.reference}{order.test ? ' · TEST ORDER' : ''}</div><h1>Your project</h1></div><div className="work-grid"><div className="stack"><section className="panel"><h2>{order.cart.service === 'logo' ? 'Logo & Brand Visual Identity' : 'Marketing & Print Design'}</h2>{projectName(order) && <p className="note">For {projectName(order)}</p>}<div className="rule"/><div className="checkout-lines">{lines(order.cart).map((l, i) => <div className="checkout-line" key={i}><div>{l.name}<small>{l.detail}</small></div><strong>{money(l.cents)}</strong></div>)}</div></section><section className="panel"><h2>Project status</h2><div className="timeline">{STATUSES.map((s, i) => <div key={s} className={`timeline-item ${i < at ? 'done' : i === at ? 'now' : ''}`}><div className="timeline-point"><span>{i < at ? <Check size={12}/> : i + 1}</span></div><span>{s}</span></div>)}</div></section>{order.cart.production.enabled && <section className="panel"><h3>Printing / production quotation</h3><p className="note">{order.cart.production.item || 'Details to confirm'} · {order.cart.production.location} · {order.cart.production.quantity || 'Quantity to confirm'}</p><p className="note">Quoted separately. No physical production has been paid for.</p></section>}{error && <Notice error>{error}</Notice>}</div><aside className="summary"><span className="summary-label">Design total</span><div className="total">{money(order.total)}</div><div className="summary-items"><div className="summary-row"><span>{order.test ? 'Test payment' : 'Verified payment'}</span><strong>{money(order.paid)}</strong></div><div className="summary-row"><span>Balance remaining</span><strong>{money(order.total - order.paid)}</strong></div><div className="summary-row"><span>Brief</span><strong>{order.briefStatus}</strong></div></div><div style={{ marginTop: 25 }}>{order.paid < order.due ? <a className="primary" href={secureLink('/payment-status', id)}>Complete payment</a> : order.briefStatus !== 'submitted' ? <a className="primary" href={secureLink('/project-brief', id)}>Complete project brief</a> : <span className="status-chip">{order.projectStatus}</span>}</div>{order.projectStatus === 'Awaiting final balance' && order.total > order.paid && <button className="primary" disabled={busy} onClick={balance} style={{ marginTop: 20 }}>Pay remaining balance</button>}{order.paymentMode === 'demo' && order.payments.some(p => p.purpose === 'balance' && p.status === 'PENDING') && <button className="secondary" disabled={busy} style={{ marginTop: 15 }} onClick={async () => { await api(`orders/${id}/demo`, 'POST', { status: 'COMPLETED', purpose: 'balance' }, id); await reload(); }}>Complete test balance</button>}<ResumeLink id={id}/></aside></div></>; }
+export function YooApp({ screen, id }: {
+    screen: string;
+    id?: string;
+}) {
+    const [cart, setCart] = useState<Cart>(() => initialCart()), [customer, setCustomer] = useState<Customer>({ name: '', business: '', individual: false, country: 'RWA', provider: '', phone: '' }), [share, setShare] = useState(60), [loaded, setLoaded] = useState(false), [config, setConfig] = useState<Config>({ mode: 'loading', providers: [] });
+    const cartRef = useRef(cart);
+    cartRef.current = cart;
+    useEffect(() => { let draftCart = initialCart(); try {
+        const data = JSON.parse(sessionStorage.getItem('yoo-order-draft') || 'null');
+        if (data) {
+            const c = cartSchema.safeParse(data.cart);
+            if (c.success)
+                draftCart = c.data;
+            if (data.customer)
+                setCustomer(data.customer);
+            if ([60, 100].includes(data.share))
+                setShare(data.share);
+        }
+    }
+    catch { } setCart(cartForOrderEntry(draftCart, screen, window.location.search, initialCart)); setLoaded(true); api('payment-config').then(setConfig).catch(() => setConfig({ mode: 'disabled', providers: [], message: 'Payments are temporarily unavailable.' })); }, [screen]);
+    useEffect(() => { if (loaded)
+        sessionStorage.setItem('yoo-order-draft', JSON.stringify({ cart, customer, share })); }, [cart, customer, share, loaded]);
+    useEffect(() => { const context = (document as any).modelContext; if (!context?.registerTool)
+        return; const lifecycle = new AbortController(); const tool = (name: string, description: string, inputSchema: object, execute: (input: any) => any, readOnlyHint = false) => Promise.resolve(context.registerTool({ name, description, inputSchema, execute, annotations: { readOnlyHint, untrustedContentHint: false } }, { signal: lifecycle.signal })).catch(() => { }); tool('get_design_quote', 'Read the currently configured design total in USD. Does not initiate payment.', { type: 'object', properties: {}, additionalProperties: false }, () => ({ cart: cartRef.current, totalCents: price(cartRef.current) }), true); tool('stage_logo_order', 'Configure a logo order. Does not save an order or collect payment.', { type: 'object', properties: { mode: { enum: ['bundle', 'basic'] }, addons: { type: 'array', items: { enum: ADDONS.map(a => a.id) } } }, required: ['mode'], additionalProperties: false }, async (input) => { const candidate = cartSchema.parse({ ...cartRef.current, service: 'logo', mode: input.mode, addons: input.addons || [] }); setCart(candidate); await new Promise(requestAnimationFrame); return { totalCents: price(candidate), mode: candidate.mode }; }); tool('stage_artwork_order', 'Configure independent artwork names and extras. Does not save an order or collect payment.', { type: 'object', properties: { artworks: { type: 'array', minItems: 1, maxItems: 100, items: { type: 'object', properties: { name: { type: 'string' }, print: { type: 'boolean' }, message: { type: 'boolean' }, priority: { type: 'boolean' } }, required: ['name', 'print', 'message', 'priority'], additionalProperties: false } } }, required: ['artworks'], additionalProperties: false }, async (input) => { if (!Array.isArray(input.artworks))
+        throw new Error('Provide at least one artwork.'); const candidate = cartSchema.parse({ ...cartRef.current, service: 'graphics', artworks: input.artworks.map((a: any) => ({ ...a, id: uuid() })) }); setCart(candidate); await new Promise(requestAnimationFrame); return { totalCents: price(candidate), artworks: candidate.artworks }; }); return () => lifecycle.abort(); }, []);
+    function saveSelection() { persistDraft(cart, customer, share); }
+    function choose(service: 'logo' | 'graphics') { setCart(c => ({ ...c, service })); sessionStorage.setItem('yoo-order-draft', JSON.stringify({ cart: { ...cart, service }, customer, share })); window.location.assign(orderRoute('/order/' + service)); }
+    const selection = screen === 'logo' || screen === 'graphics';
+    return <div className={`shell ${screen === 'home' ? 'landing-shell' : selection ? 'with-mobile-bar' : ''}`}><BrandDefinitions/><Header mode={config.mode}/><main>{screen === 'home' ? <section className="entry"><div className="entry-content"><h1 data-reveal>What are we building <span className="accent">today?</span></h1><div className="service-grid"><button className="service-card" data-reveal aria-label="Logo & Brand Visual Identity, from $30" onClick={() => choose('logo')}><div className="service-card-head"><BrandIllustration kind="logo"/><div className="service-copy"><h2 className="service-title"><span>Logo &</span>{' '}<span>Brand Visual</span>{' '}<span>Identity</span></h2><span className="from"><BrandIllustration kind="money"/><span>FROM <b>$30</b></span></span></div></div></button><button className="service-card" data-reveal aria-label="Marketing & Print Design, from $15" onClick={() => choose('graphics')}><div className="service-card-head"><BrandIllustration kind="graphics"/><div className="service-copy"><h2 className="service-title"><span>Marketing</span>{' '}<span>& Print</span>{' '}<span>Design</span></h2><span className="from"><BrandIllustration kind="money"/><span>FROM <b>$15</b></span></span></div></div></button></div></div></section> : selection ? <><Steps step={0} cart={cart} customer={customer} share={share} onNavigate={saveSelection} busy={!loaded}/><a className="back" href={orderRoute('/')}><ChevronLeft size={17}/>All services</a><div className="page-head" data-reveal><h1>{screen === 'logo' ? 'Logo & Brand Visual Identity' : 'Marketing & Print Design'}</h1></div>{loaded ? <div className="work-grid"><div>{screen === 'logo' ? <Logo cart={cart} setCart={setCart}/> : <Graphics cart={cart} setCart={setCart}/>}</div><Summary cart={cart} onReview={saveSelection}/></div> : <div className="loading">Loading your selections…</div>}{loaded && <div className="mobile-summary"><div><small>Design total</small><strong aria-live="polite">{money(price(cart))}</strong></div><a className="primary" href={orderRoute('/checkout')} onClick={saveSelection}>Review order</a></div>}</> : screen === 'checkout' ? (loaded ? <Checkout cart={cart} customer={customer} setCustomer={setCustomer} share={share} setShare={setShare} config={config}/> : <div className="loading">Loading your order…</div>) : screen === 'payment' && id ? <PaymentStatus id={id}/> : screen === 'brief' && id ? <ProjectBrief id={id}/> : screen === 'status' && id ? <OrderStatus id={id}/> : null}</main>{screen !== 'home' && <Footer />}</div>;
+}
+export function AdminApp() { const [orders, setOrders] = useState<RecordOrder[]>([]), [selected, setSelected] = useState<RecordOrder | null>(null), [error, setError] = useState(''), [loading, setLoading] = useState(true), [filter, setFilter] = useState('all'), [busy, setBusy] = useState(false); const [status, setStatus] = useState(''); async function load() { try {
+    const x = await api('admin/orders');
+    setOrders(x.orders);
+    setError('');
+}
+catch (e) {
+    setError((e as Error).message);
+}
+finally {
+    setLoading(false);
+} } useEffect(() => { load(); }, []); async function open(id: string) { try {
+    const o = await api('admin/orders/' + id);
+    setSelected(o);
+    setStatus(o.projectStatus);
+    setError('');
+}
+catch (e) {
+    setError((e as Error).message);
+} } async function update() { if (!selected)
+    return; setBusy(true); try {
+    await api('admin/orders/' + selected.id, 'PATCH', { status });
+    await open(selected.id);
+    await load();
+}
+catch (e) {
+    setError((e as Error).message);
+}
+finally {
+    setBusy(false);
+} } return <div className="shell"><Header /><main style={{ paddingTop: 40 }}><div className="admin-heading"><div><div className="eyebrow">Yoo360 team</div><h1 style={{ fontSize: '2.3rem' }}>Order workspace</h1></div><a className="secondary" href="/signout-with-chatgpt?return_to=/" target="_top">Sign out</a></div>{error && <div style={{ marginTop: 25 }}><Notice error>{error}</Notice></div>}{selected ? <><button className="back" style={{ marginTop: 25 }} onClick={() => setSelected(null)}><ChevronLeft size={17}/>All orders</button><div className="admin-detail"><div className="stack"><section className="panel"><div className="eyebrow">{selected.reference}{selected.test ? ' · TEST ORDER' : ''}</div><h2>{projectName(selected) || 'Design order'}</h2><p className="note">{selected.customer.name ? selected.customer.name + ' · ' : ''}+{normalizePhone(selected.customer.phone, selected.customer.country)}</p><div className="rule"/>{lines(selected.cart).map((l, i) => <div className="checkout-line" style={{ marginBottom: 15 }} key={i}><div>{l.name}<small>{l.detail}</small></div><strong>{money(l.cents)}</strong></div>)}</section><section className="panel"><h2>Project brief · {selected.briefStatus}</h2>{Object.entries(selected.brief).map(([id, fields]) => <div key={id}><h3 style={{ marginTop: 22 }}>{id === 'logo' ? 'Logo brief' : selected.cart.artworks.find(a => a.id === id)?.name || 'Design project brief'}</h3>{Object.entries(fields).map(([k, v]) => <div className="brief-response" key={k}><small>{k.replace(/([A-Z])/g, ' $1')}</small><p>{v}</p></div>)}</div>)}{selected.files.map(f => <div className="file-row" key={f.id}><a href={`/api/design-orders/admin/orders/${selected.id}/files/${f.id}`} target="_blank" rel="noreferrer"><File size={16}/>{f.name}</a><small>{Math.ceil(f.size / 1024)} KB</small></div>)}</section>{selected.cart.production.enabled && <section className="panel"><h2>Production quotation request</h2>{Object.entries(selected.cart.production).filter(([k]) => k !== 'enabled').map(([k, v]) => <div className="brief-response" key={k}><small>{k}</small><p>{String(v) || 'Not specified'}</p></div>)}</section>}<section className="panel"><h2>Payment history</h2>{selected.payments.map(p => <div className="brief-response" key={p.id}><small>{p.purpose} · {new Date(p.created_at).toLocaleString()}</small><p>{p.amount} {p.currency} · {p.status}{selected.test ? (selected.paymentMode === 'demo' ? ' · SIMULATED' : ' · SANDBOX') : ''}</p></div>)}</section></div><div className="stack"><section className="panel"><h3>Project status</h3><div style={{ margin: '18px 0' }}><Picker value={status} onChange={setStatus} label="Project status" options={STATUSES.map(s => ({ value: s, label: s }))}/></div><button className="primary" disabled={busy} onClick={update}>{busy ? 'Saving…' : 'Update status'}</button><div className="rule"/><div className="summary-row"><span>Total</span><strong>{money(selected.total)}</strong></div><div className="summary-row" style={{ marginTop: 12 }}><span>{selected.test ? (selected.paymentMode === 'demo' ? 'Simulated paid' : 'Sandbox paid') : 'Verified paid'}</span><strong>{money(selected.paid)}</strong></div><div className="summary-row" style={{ marginTop: 12 }}><span>Outstanding</span><strong>{money(selected.total - selected.paid)}</strong></div></section><section className="panel"><h3 style={{ marginBottom: 20 }}>Activity</h3><div className="activity">{selected.activity.map(a => <div key={a.id}><p>{a.message}</p><small>{new Date(a.created_at).toLocaleString()}</small></div>)}</div></section></div></div></> : <><div className="admin-stats"><div className="panel"><p>All orders</p><b>{orders.length}</b></div><div className="panel"><p>Ready to start</p><b>{orders.filter(o => o.projectStatus === 'Ready to start').length}</b></div><div className="panel"><p>Verified payments</p><b>{money(orders.filter(o => !o.test).reduce((s, o) => s + o.paid, 0))}</b></div></div><div className="admin-filters"><Picker value={filter} onChange={setFilter} label="Filter orders" options={[{ value: 'all', label: 'All statuses' }, ...STATUSES.map(s => ({ value: s, label: s }))]}/><button className="text-button" onClick={load}>Refresh</button></div><div className="order-table"><Table><TableHeader><TableRow><TableHead>Order</TableHead><TableHead>Customer</TableHead><TableHead>Status</TableHead><TableHead>Total / balance</TableHead></TableRow></TableHeader><TableBody>{orders.filter(o => filter === 'all' || o.projectStatus === filter).map(o => <TableRow key={o.id}><TableCell><button className="text-button accent" onClick={() => open(o.id)}>{o.reference}</button><small>{o.test ? 'TEST · ' : ''}{o.cart.service === 'logo' ? 'Logo & identity' : 'Marketing & Print Design'}</small></TableCell><TableCell>{projectName(o) || 'Mobile Money customer'}<small>+{normalizePhone(o.customer.phone, o.customer.country)}</small></TableCell><TableCell><span className="status-chip">{o.projectStatus}</span><small>{o.briefStatus} brief</small></TableCell><TableCell>{money(o.total)}<small>{money(o.total - o.paid)} remaining</small></TableCell></TableRow>)}</TableBody></Table>{!orders.length && <div className="empty">{loading ? 'Loading orders…' : 'No orders yet. Orders will appear here after checkout.'}</div>}</div></>}</main><Footer /></div>; }

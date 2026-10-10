@@ -5,6 +5,24 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/design-orders/:path*",
+      "destination": "https://yoo360-studio-orders.berton-thedezi.chatgpt.site/api/:path*"
+    },
+    {
+      "source": "/order-a-design/payment-status/:id",
+      "destination": "/order-a-design/payment-status"
+    },
+    {
+      "source": "/order-a-design/project-brief/:id",
+      "destination": "/order-a-design/project-brief"
+    },
+    {
+      "source": "/order-a-design/order/:id([0-9a-f-]{36})",
+      "destination": "/order-a-design/order"
+    }
+  ],
   "headers": [
     {
       "source": "/api/design-orders/:path*",
@@ -14,12 +32,6 @@
           "value": "private, no-store"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/design-orders/:path*",
-      "destination": "https://yoo360-studio-orders.berton-thedezi.chatgpt.site/api/:path*"
     }
   ]
 }

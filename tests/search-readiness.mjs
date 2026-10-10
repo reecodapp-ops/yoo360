@@ -57,7 +57,7 @@ assert.ok(robots.includes('User-agent: *\nAllow: /'));
 assert.ok(!robots.includes('Disallow: /'));
 assert.ok(robots.includes(`Sitemap: ${origin}/sitemap.xml`));
 const sitemap = await readFile('dist/sitemap.xml', 'utf8');
-assert.deepEqual([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]), cases.map(([, route]) => origin + route));
+assert.deepEqual([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]), [...cases.map(([, route]) => origin + route), ...['/order-a-design', '/order-a-design/order/logo', '/order-a-design/order/graphics'].map(route => origin + route)]);
 const missing = await readFile('dist/404.html', 'utf8');
 assert.ok(missing.includes('content="noindex, follow"'));
 assert.ok(!missing.includes('rel="canonical"'));

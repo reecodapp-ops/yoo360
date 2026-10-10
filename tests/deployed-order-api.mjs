@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+import { randomBytes, randomUUID } from 'node:crypto';
+
+// This opt-in check creates clearly labelled demo orders and never collects money.
+assert.ok(process.argv.includes('--demo'), 'Pass --demo to run the live demo-only integration check.');
+const base = 'https://www.theyoo360.com/api/design-orders/';
+const origin = 'https://www.theyoo360.com';
+let checks = 0;
+const pass = message => { ++checks; console.log('PASS ' + message); };
+async function request(path, { method = 'GET', data, key, form, status = 200, source = origin, binary = false } = {}) {
+  const headers = { Origin: source, ...(key ? { Authorization: 'Bearer ' + key } : {}) };
+  if (data) headers['Content-Type'] = 'application/json';
+  const response = await fetch(base + path, { method, headers, body: form || (data ? JSON.stringify(data) : undefined), signal: AbortSignal.timeout(60000) });
+  // Do not print an order, wallet or private key on failure.
+  assert.equal(response.status, status, `${method} ${path.replace(/[a-f0-9-]{36}/g, ':id')} returned ${response.status}`);
+  assert.match(response.headers.get('cache-control') || '', /no-store/);
+  return binary ? new Uint8Array(await response.arrayBuffer()) : response.json();
+}
+assert.equal((await request('payment-config')).mode, 'demo', 'Stop if the backend is configured to collect real payments.');
+pass('The official-domain API uses demo payments and uncached responses');
+const artwork = { id: randomUUID(), name: 'Deployment check, demo only', print: false, message: false, priority: false };
+const cart = { service: 'graphics', mode: 'bundle', addons: [], artworks: [artwork], production: { enabled: false, location: '', item: '', quantity: '', material: '', notes: '' } };
+const input = { cart, customer: { country: 'RWA', provider: '', phone: '+250783456789' }, share: 60, requestKey: randomUUID(), accessKey: randomBytes(32).toString('hex') };
+const order = await request('orders', { method: 'POST', data: input, status: 201 });
+const path = 'orders/' + order.id;
+const key = input.accessKey;
+assert.equal((await request('orders', { method: 'POST', data: input })).id, order.id);
+await request('orders', { method: 'POST', data: input, source: 'https://untrusted.example', status: 403 });
+pass('Official-origin checkout is idempotent and unrelated origins are rejected');
+let record = await request(path, { key });
+assert.equal(record.total, 1500); assert.equal(record.due, 900); assert.equal(record.test, true);
+await request(path, { status: 403 });
+await request(path, { key: randomBytes(32).toString('hex'), status: 403 });
+await request('admin/orders', { status: 401 });
+await request(path + '/brief', { method: 'PUT', key, data: { brief: {}, submit: false }, status: 403 });
+pass('Private orders require their access key, staff access remains protected and unpaid briefs stay locked');
+const payment = await request(path + '/payment', { method: 'POST', key, data: { purpose: 'initial' } });
+assert.equal((await request(path + '/payment', { method: 'POST', key, data: { purpose: 'initial' } })).paymentId, payment.paymentId);
+await request(path + '/verify', { method: 'POST', key, data: {} });
+record = await request(path, { key }); assert.equal(record.paid, 0); assert.equal(record.payments[0].promptAccepted, false);
+await request(path + '/demo', { method: 'POST', key, data: { status: 'COMPLETED' } });
+await request(path + '/demo', { method: 'POST', key, data: { status: 'COMPLETED' } });
+record = await request(path, { key }); assert.equal(record.paid, 900);
+pass('Payment retries reuse the request and disclosed demo confirmation counts the deposit once');
+const brief = { [artwork.id]: { purpose: 'Deployment integration check only', message: 'No creative work requested', audience: 'Internal quality check' } };
+await request(path + '/brief', { method: 'PUT', key, data: { brief, submit: false } });
+assert.deepEqual((await request(path, { key })).brief, brief);
+pass('Project brief drafts persist through the official domain');
+const bytes = new Uint8Array(10 * 1024 * 1024).fill(65);
+const form = new FormData();
+form.append('file', new Blob([bytes], { type: 'text/plain' }), 'deployment-check-10mb.txt');
+form.append('artworkId', artwork.id);
+const file = await request(path + '/files', { method: 'POST', key, form, status: 201 });
+await request(path + '/files/' + file.id, { status: 403 });
+assert.deepEqual(await request(path + '/files/' + file.id, { key, binary: true }), bytes);
+await request(path + '/files/' + file.id, { method: 'DELETE', key });
+assert.equal((await request(path, { key })).files.length, 0);
+pass('The full 10 MB upload and private download work on the official domain; the check file is removed');
+await request(path + '/brief', { method: 'PUT', key, data: { brief, submit: true } });
+record = await request(path, { key }); assert.equal(record.briefStatus, 'submitted'); assert.equal(record.projectStatus, 'Ready to start');
+pass('Demo payment and a submitted brief advance the project correctly');
+const logoInput = { ...input, cart: { ...cart, service: 'logo', mode: 'basic' }, share: 100, requestKey: randomUUID(), accessKey: randomBytes(32).toString('hex') };
+const logo = await request('orders', { method: 'POST', data: logoInput, status: 201 });
+record = await request('orders/' + logo.id, { key: logoInput.accessKey }); assert.equal(record.total, 3000); assert.equal(record.due, 3000);
+pass('Basic logo checkout supports full payment with the existing $30 price');
+console.log(`All ${checks} deployed API checks passed. These are demo orders, not real payments.`);
