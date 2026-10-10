@@ -4,5 +4,22 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/api/design-orders/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "private, no-store"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/design-orders/:path*",
+      "destination": "https://yoo360-studio-orders.berton-thedezi.chatgpt.site/api/:path*"
+    }
+  ]
 }
