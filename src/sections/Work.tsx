@@ -4,14 +4,14 @@ import { ArrowUpRight } from "lucide-react";
 const works = [
   {
     img: "/assets/works/work-2.webp",
-    title: "Borderless — Campaign Series",
+    title: "Borderless: Campaign Series",
     tag: "Creative Design",
     span: "md:col-span-7",
     ratio: "aspect-[4/3]",
   },
   {
     img: "/assets/works/work-app.webp",
-    title: "Campus Mart — Student Marketplace",
+    title: "Campus Mart: Student Marketplace",
     tag: "Mobile App",
     span: "md:col-span-5",
     ratio: "aspect-[4/3]",

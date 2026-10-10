@@ -13,21 +13,21 @@ const services = [
   {
     n: "02",
     title: "Brand Identity",
-    desc: "We don't just design logos — we build visual systems that show who you are and why you'll be remembered.",
+    desc: "We don't just design logos. We build visual systems that show who you are and why you'll be remembered.",
     tags: ["Logo", "Visual system", "Guidelines"],
     img: "/assets/visual/brand.webp",
   },
   {
     n: "03",
     title: "Web Development",
-    desc: "Websites that don't just exist online — they explain, attract, and help people trust what you do.",
-    tags: ["Websites", "E-commerce", "SEO"],
+    desc: "Websites that explain what you do, attract customers and help people trust you.",
+    tags: ["Websites", "Ecommerce", "SEO"],
     img: "/assets/works/work-web.webp",
   },
   {
     n: "04",
     title: "Mobile Apps",
-    desc: "Products like Campus Mart — marketplaces and tools engineered for focused, high-demand audiences.",
+    desc: "We build marketplaces and tools for focused audiences, including products like Campus Mart.",
     tags: ["iOS & Android", "Marketplaces", "UX"],
     img: "/assets/works/work-app.webp",
   },
@@ -63,8 +63,8 @@ export default function Services() {
             </h2>
           </div>
           <p className="max-w-xs text-sm leading-relaxed text-[#131311]/60">
-            From first sketch to shipped product — everything your brand needs
-            to look sharp and grow.
+            Everything your brand needs to look sharp and grow, from the
+            first sketch to the finished product.
           </p>
         </div>
 

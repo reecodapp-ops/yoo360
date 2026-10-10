@@ -27,7 +27,7 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
 
   return (
     <span ref={ref} className="font-display text-6xl font-bold tracking-tight md:text-7xl">
-      0{suffix}
+      {typeof window === "undefined" ? value : 0}{suffix}
     </span>
   );
 }
@@ -73,7 +73,7 @@ export default function Impact() {
           </span>
           <div>
             <p className="font-display text-xl font-bold md:text-2xl">
-              Winner — DRC SPNCK Creative Award
+              DRC SPNCK Creative Award Winner
             </p>
             <p className="mt-1 text-sm text-[#F6F4EE]/55">
               Recognized for creative excellence on a national stage.
