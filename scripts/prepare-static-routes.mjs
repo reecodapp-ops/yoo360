@@ -11,7 +11,7 @@ const pages = [
   {
     path: '/', file: 'dist/index.html',
     title: 'Yoo360 | Branding, Graphic & Web Design in East Africa',
-    description: 'Yoo360 helps brands in East Africa and beyond with logo design, visual identity, marketing design, websites and mobile apps. Order a design or discuss a project.',
+    description: 'Yoo360 helps brands in East Africa and beyond with logo design, visual identity, marketing design, websites and mobile apps. Explore monthly marketing partnerships or discuss a project.',
     type: 'WebPage',
   },
   {
@@ -31,11 +31,11 @@ const pages = [
 const organization = {
   '@type': 'Organization', '@id': `${origin}/#organization`,
   name: 'Yoo360', url: `${origin}/`, logo,
-  description: 'Creative design, brand identity, web development and mobile apps for brands in East Africa and beyond.',
+  description: 'Brand strategy, market launches, monthly marketing partnerships, websites and digital products for businesses in East Africa and beyond.',
   areaServed: { '@type': 'Place', name: 'East Africa' },
   hasOfferCatalog: {
     '@type': 'OfferCatalog', name: 'Yoo360 services',
-    itemListElement: ['Creative Design', 'Brand Identity', 'Web Development', 'Mobile Apps'].map(name => ({
+    itemListElement: ['Brand Strategy & Identity', 'Campaigns & Market Launches', 'Marketing Partnerships', 'Websites & Digital Products', 'Video & Motion Production'].map(name => ({
       '@type': 'Offer', itemOffered: { '@type': 'Service', name, provider: { '@id': `${origin}/#organization` } },
     })),
   },
@@ -74,6 +74,11 @@ function metadata(page) {
       })),
     };
   }
+  if (page.service || page.plan) {
+    const serviceId = `${url}#service`;
+    pageSchema.mainEntity = { '@id': serviceId };
+    graph.push({ '@type': 'Service', '@id': serviceId, url, name: page.service?.title || page.plan.name + ' Marketing Partnership', description: page.description, provider: { '@id': `${origin}/#organization` }, ...(page.plan ? { offers: { '@type': 'Offer', priceCurrency: 'USD', price: page.plan.monthly, url, description: 'Monthly fee. Scope and agreement confirmed before payment.' } } : {}) });
+  }
   const structuredData = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c');
   return `<title>${title}</title>
     <meta name="description" content="${description}" />
@@ -110,8 +115,11 @@ await build({
     rollupOptions: { output: { entryFileNames: 'prerender.js' } },
   },
 });
-const { renderPage, teamMembers } = await import(pathToFileURL(path.resolve('dist-ssr/prerender.js')).href);
+const { renderPage, teamMembers, servicePages, partnershipPlans } = await import(pathToFileURL(path.resolve('dist-ssr/prerender.js')).href);
 pages.splice(2, 0,
+  { path: '/marketing-partnerships', file: 'dist/marketing-partnerships/index.html', title: 'Monthly Marketing Partnerships | Yoo360', description: 'Explore Starter, Growth, Scale and Enterprise creative and marketing partnerships. Monthly plans from $2,000 with defined production, campaign and team support.', type: 'CollectionPage' },
+  ...partnershipPlans.map(plan => ({ path: '/marketing-partnerships/' + plan.slug, file: 'dist/marketing-partnerships/' + plan.slug + '/index.html', title: plan.name + ' Marketing Partnership | Yoo360', description: plan.goal + ' Monthly pricing ' + (plan.slug === 'enterprise' ? 'from ' : '') + '$' + plan.monthly.toLocaleString('en-US') + '.', type: 'WebPage', plan })),
+  ...servicePages.map(service => ({ path: '/' + service.slug, file: 'dist/' + service.slug + '/index.html', title: service.title + ' | Yoo360', description: service.intro, type: 'WebPage', service })),
   {
     path: '/team', file: 'dist/team/index.html',
     title: 'The Founding Team | Yoo360',

@@ -5,6 +5,9 @@ const origin = 'https://www.theyoo360.com';
 const cases = [
   ['dist/index.html', '/', 'We design what'],
   ['dist/discuss-a-project/index.html', '/discuss-a-project', 'Discuss a'],
+  ['dist/marketing-partnerships/index.html', '/marketing-partnerships', 'Build. Grow.'],
+  ...['starter', 'growth', 'scale', 'enterprise'].map(slug => [`dist/marketing-partnerships/${slug}/index.html`, '/marketing-partnerships/' + slug, slug[0].toUpperCase() + slug.slice(1) + ' partnership.']),
+  ...[['brand-strategy-identity', 'Brand Strategy &amp; Identity'], ['campaigns-market-launches', 'Campaigns &amp; Market Launches'], ['websites-digital-products', 'Websites &amp; Digital Products'], ['video-motion-production', 'Video &amp; Motion Production']].map(([slug, title]) => [`dist/${slug}/index.html`, '/' + slug, title]),
   ['dist/team/index.html', '/team', 'The Founding Team'],
   ['dist/team/melkisedeck-ruposo/index.html', '/team/melkisedeck-ruposo', 'Melkisedeck Ruposo'],
   ['dist/team/berton-ruposo/index.html', '/team/berton-ruposo', 'Berton Ruposo'],
@@ -48,7 +51,7 @@ for (const [file, route, heading] of cases) {
 }
 const home = await readFile('dist/index.html', 'utf8');
 assert.ok(home.includes('East Africa'));
-for (const service of ['Creative Design', 'Brand Identity', 'Web Development', 'Mobile Apps']) {
+for (const service of ['Brand Strategy &amp; Identity', 'Campaigns &amp; Market Launches', 'Marketing Partnerships', 'Websites &amp; Digital Products']) {
   assert.ok(home.toLowerCase().split('<body>')[1].includes(service.toLowerCase()), `${service} is present in page content`);
 }
 assert.ok(home.includes('>72</span>'), 'Project count is correct before JavaScript runs');
@@ -70,7 +73,7 @@ assert.equal((cards.match(/<h3 /g) || []).length, 3);
 assert.equal((cards.match(/<p /g) || []).length, 3, 'The only card paragraph is its role');
 assert.equal((cards.match(/<img /g) || []).length, 3, 'All cards have a real portrait');
 assert.ok(!cards.includes('<svg') && !cards.includes('linkedin.com') && !cards.includes('instagram.com'), 'No connection icons or links appear on the cards');
-for (const file of cases.slice(3).map(([file]) => file)) {
+for (const file of cases.filter(([, route]) => route.startsWith('/team/')).map(([file]) => file)) {
   const html = await readFile(file, 'utf8');
   const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)[1]);
   const person = schema['@graph'].find(item => item['@type'] === 'Person');
@@ -88,4 +91,4 @@ assert.ok(!footer.includes('href="/team"'), 'The team entry has moved out of the
 const shareImage = await readFile('dist/brand/yoo360-og.png');
 assert.equal(shareImage.readUInt32BE(16), 576);
 assert.equal(shareImage.readUInt32BE(20), 303);
-console.log('PASS All six public pages contain visible HTML, valid metadata and schema, working assets, the supplied sharing image and canonical sitemap entries; the error page is excluded from indexing.');
+console.log('PASS All eighteen public pages contain visible HTML, valid metadata and schema, working assets, the supplied sharing image and canonical sitemap entries; the error page is excluded from indexing.');

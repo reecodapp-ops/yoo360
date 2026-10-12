@@ -33,7 +33,7 @@ export default function Footer({ subpage = false }: { subpage?: boolean }) {
             href={ORDERS_URL}
             className="group inline-flex items-center gap-2 self-start font-display text-lg font-semibold md:self-auto"
           >
-            Order a design
+            Design services
             <span className="grid size-12 place-items-center rounded-full bg-[#FFC700] text-[#131311] transition-transform duration-300 group-hover:rotate-45">
               <ArrowUpRight className="size-5" />
             </span>

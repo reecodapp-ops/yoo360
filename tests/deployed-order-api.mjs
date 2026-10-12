@@ -19,7 +19,7 @@ async function request(path, { method = 'GET', data, key, form, status = 200, so
 assert.equal((await request('payment-config')).mode, 'demo', 'Stop if the backend is configured to collect real payments.');
 pass('The official-domain API uses demo payments and uncached responses');
 const artwork = { id: randomUUID(), name: 'Deployment check, demo only', print: false, message: false, priority: false };
-const cart = { service: 'graphics', mode: 'bundle', addons: [], artworks: [artwork], production: { enabled: false, location: '', item: '', quantity: '', material: '', notes: '' } };
+const cart = { catalogVersion: '2026-10-12', service: 'graphics', mode: 'bundle', addons: [], artworks: [artwork], production: { enabled: false, location: '', item: '', quantity: '', material: '', notes: '' } };
 const input = { cart, customer: { country: 'RWA', provider: '', phone: '+250783456789' }, share: 60, requestKey: randomUUID(), accessKey: randomBytes(32).toString('hex') };
 const order = await request('orders', { method: 'POST', data: input, status: 201 });
 const path = 'orders/' + order.id;
@@ -28,7 +28,7 @@ assert.equal((await request('orders', { method: 'POST', data: input })).id, orde
 await request('orders', { method: 'POST', data: input, source: 'https://untrusted.example', status: 403 });
 pass('Official-origin checkout is idempotent and unrelated origins are rejected');
 let record = await request(path, { key });
-assert.equal(record.total, 1500); assert.equal(record.due, 900); assert.equal(record.test, true);
+assert.equal(record.total, 4000); assert.equal(record.due, 2400); assert.equal(record.test, true);
 await request(path, { status: 403 });
 await request(path, { key: randomBytes(32).toString('hex'), status: 403 });
 await request('admin/orders', { status: 401 });
@@ -40,7 +40,7 @@ await request(path + '/verify', { method: 'POST', key, data: {} });
 record = await request(path, { key }); assert.equal(record.paid, 0); assert.equal(record.payments[0].promptAccepted, false);
 await request(path + '/demo', { method: 'POST', key, data: { status: 'COMPLETED' } });
 await request(path + '/demo', { method: 'POST', key, data: { status: 'COMPLETED' } });
-record = await request(path, { key }); assert.equal(record.paid, 900);
+record = await request(path, { key }); assert.equal(record.paid, 2400);
 pass('Payment retries reuse the request and disclosed demo confirmation counts the deposit once');
 const brief = { [artwork.id]: { purpose: 'Deployment integration check only', message: 'No creative work requested', audience: 'Internal quality check' } };
 await request(path + '/brief', { method: 'PUT', key, data: { brief, submit: false } });
