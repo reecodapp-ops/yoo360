@@ -34,10 +34,10 @@ export default function Story() {
               there's a <em className="font-serif-accent font-normal italic text-[#C79A00]">why.</em>
             </h2>
             <p className="mt-6 max-w-md text-base leading-relaxed text-[#131311]/65">
-              We are a creative tech studio born from freelancing late at night
-              and one big vision: to elevate brands in East Africa and beyond with
-              creative design, innovative digital tools, and strategies built
-              to grab attention, inspire, and grow impact.
+              We help businesses understand their customers, shape their brands
+              and bring their products to market. Our designers, filmmakers,
+              strategists and developers work together across brand identity,
+              campaigns, ongoing marketing and digital products.
             </p>
             <a href="/team" className="group mt-8 inline-flex items-center gap-2 rounded-full bg-[#131311] px-6 py-3 text-sm font-semibold text-[#F6F4EE] transition-colors hover:bg-[#FFC700] hover:text-[#131311] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#A17A00]">
               Meet the team <ArrowUpRight aria-hidden="true" className="size-4 transition-transform duration-300 motion-reduce:transition-none group-hover:rotate-45" />

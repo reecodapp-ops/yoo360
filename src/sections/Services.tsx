@@ -3,34 +3,10 @@ import { motion, useMotionValue, useSpring, AnimatePresence } from "framer-motio
 import { ArrowUpRight } from "lucide-react";
 
 const services = [
-  {
-    n: "01",
-    title: "Creative Design",
-    desc: "Posters, campaigns and social content that give your message the spotlight it deserves.",
-    tags: ["Posters", "Campaigns", "Social"],
-    img: "/assets/works/work-1.webp",
-  },
-  {
-    n: "02",
-    title: "Brand Identity",
-    desc: "We don't just design logos. We build visual systems that show who you are and why you'll be remembered.",
-    tags: ["Logo", "Visual system", "Guidelines"],
-    img: "/assets/visual/brand.webp",
-  },
-  {
-    n: "03",
-    title: "Web Development",
-    desc: "Websites that explain what you do, attract customers and help people trust you.",
-    tags: ["Websites", "Ecommerce", "SEO"],
-    img: "/assets/works/work-web.webp",
-  },
-  {
-    n: "04",
-    title: "Mobile Apps",
-    desc: "We build marketplaces and tools for focused audiences, including products like Campus Mart.",
-    tags: ["iOS & Android", "Marketplaces", "UX"],
-    img: "/assets/works/work-app.webp",
-  },
+  { n: "01", title: "Brand Strategy & Identity", desc: "Customer insight, clear positioning and visual systems that make your brand recognizable and ready for the market.", tags: ["Strategy", "Identity", "Packaging"], img: "/assets/visual/brand.webp", href: "/brand-strategy-identity" },
+  { n: "02", title: "Campaigns & Market Launches", desc: "Market understanding, tailored messaging and creative execution that connect your product with its customers.", tags: ["Campaigns", "Production", "Launches"], img: "/assets/works/work-1.webp", href: "/campaigns-market-launches" },
+  { n: "03", title: "Marketing Partnerships", desc: "Your ongoing creative and marketing team, with monthly plans starting at $2,000.", tags: ["Planning", "Marketing", "Monthly support"], img: "/assets/works/work-web.webp", href: "/marketing-partnerships" },
+  { n: "04", title: "Websites & Digital Products", desc: "Websites, ecommerce, apps and marketplaces built around your goals. Pricing follows your project's scope.", tags: ["Websites", "Apps", "UX"], img: "/assets/works/work-app.webp", href: "/websites-digital-products" },
 ];
 
 export default function Services() {
@@ -63,8 +39,8 @@ export default function Services() {
             </h2>
           </div>
           <p className="max-w-xs text-sm leading-relaxed text-[#131311]/60">
-            Everything your brand needs to look sharp and grow, from the
-            first sketch to the finished product.
+            From understanding your customers to shaping your brand,
+            launching campaigns and building digital products.
           </p>
         </div>
 
@@ -98,7 +74,7 @@ export default function Services() {
           {services.map((s, i) => (
             <motion.a
               key={s.n}
-              href="#contact"
+              href={s.href}
               onMouseEnter={() => setActive(i)}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}

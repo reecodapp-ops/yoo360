@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
-import { ORDERS_URL } from "@/lib/links";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -66,10 +65,10 @@ export default function Hero() {
           <motion.div variants={fadeUp} initial="hidden" animate="show" custom={4} className="max-w-md">
             <div className="flex flex-wrap items-center gap-4">
               <a
-                href={ORDERS_URL}
+                href="/discuss-a-project"
                 className="group inline-flex items-center gap-2 rounded-full bg-[#131311] px-7 py-3.5 text-sm font-semibold text-[#F6F4EE] transition-colors hover:bg-[#FFC700] hover:text-[#131311]"
               >
-                Order a design
+                Discuss a project
                 <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
               </a>
               <a

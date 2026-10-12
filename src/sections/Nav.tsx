@@ -51,7 +51,7 @@ export default function Nav({ projectPage = false }: { projectPage?: boolean }) 
 
         <div className="flex items-center gap-3">
           <a href={ORDERS_URL} className="hidden text-sm font-medium text-[#131311]/70 transition-colors hover:text-[#131311] lg:inline-flex">
-            Order a design
+            Design services
           </a>
           <a
             href="/discuss-a-project"
@@ -94,7 +94,7 @@ export default function Nav({ projectPage = false }: { projectPage?: boolean }) 
                 </li>
               ))}
               <li className="pt-2">
-                <a href={ORDERS_URL} onClick={() => setOpen(false)} className="mb-4 block px-3 py-3 font-display text-2xl font-semibold">Order a design</a>
+                <a href={ORDERS_URL} onClick={() => setOpen(false)} className="mb-4 block px-3 py-3 font-display text-2xl font-semibold">Design services</a>
                 <a
                   href="/discuss-a-project"
                   onClick={() => setOpen(false)}
