@@ -61,6 +61,6 @@ record = await request(path, { key }); assert.equal(record.briefStatus, 'submitt
 pass('Demo payment and a submitted brief advance the project correctly');
 const logoInput = { ...input, cart: { ...cart, service: 'logo', mode: 'basic' }, share: 100, requestKey: randomUUID(), accessKey: randomBytes(32).toString('hex') };
 const logo = await request('orders', { method: 'POST', data: logoInput, status: 201 });
-record = await request('orders/' + logo.id, { key: logoInput.accessKey }); assert.equal(record.total, 3000); assert.equal(record.due, 3000);
-pass('Basic logo checkout supports full payment with the existing $30 price');
+record = await request('orders/' + logo.id, { key: logoInput.accessKey }); assert.equal(record.total, 14999); assert.equal(record.due, 14999);
+pass('Basic logo checkout supports full payment at the current $149.99 price');
 console.log(`All ${checks} deployed API checks passed. These are demo orders, not real payments.`);
