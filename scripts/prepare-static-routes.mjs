@@ -10,8 +10,8 @@ const shareImageAlt = 'Yoo360. Helping brands that do good look good.';
 const pages = [
   {
     path: '/', file: 'dist/index.html',
-    title: 'Yoo360 | Brand Strategy & Marketing in East Africa',
-    description: 'Yoo360 builds brands for East Africa and beyond through brand strategy, marketing partnerships, creative production and digital products.',
+    title: 'Yoo360 | Brand Strategy & Market Growth in Africa',
+    description: 'Yoo360 helps ambitious businesses enter and grow in African markets through customer insight, brand strategy, launches and ongoing marketing partnerships.',
     type: 'WebPage',
   },
   {
@@ -31,7 +31,7 @@ const pages = [
 const organization = {
   '@type': 'Organization', '@id': `${origin}/#organization`,
   name: 'Yoo360', url: `${origin}/`, logo, email: 'yoo360agency@gmail.com',
-  description: 'Brand strategy, market launches, monthly marketing partnerships, websites and digital products for businesses in East Africa and beyond.',
+  description: 'Yoo360 helps ambitious businesses enter and grow in African markets through customer insight, brand strategy, launches and ongoing marketing partnerships.',
   areaServed: { '@type': 'Place', name: 'East Africa' },
   contactPoint: { '@type': 'ContactPoint', contactType: 'Project enquiries', email: 'yoo360agency@gmail.com', url: `${origin}/discuss-a-project`, availableLanguage: 'English' },
   founder: { '@id': `${origin}/team/berton-ruposo#person` },
