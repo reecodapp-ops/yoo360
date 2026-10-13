@@ -32,6 +32,45 @@
           "value": "private, no-store"
         }
       ]
+    },
+    {
+      "source": "/assets/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/order-a-design/assets/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/order-a-design/:path(checkout|payment-status|project-brief|order)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/campaigns-market-launches",
+      "destination": "/marketing-partnerships",
+      "permanent": true
+    },
+    {
+      "source": "/brand-strategy-identity",
+      "destination": "/order-a-design/order/logo",
+      "permanent": true
     }
   ]
 }

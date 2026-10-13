@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { ArrowUpRight, Dribbble, Instagram, Linkedin, Twitter } from "lucide-react";
-import { ORDERS_URL } from "@/lib/links";
 
 export default function Footer({ subpage = false }: { subpage?: boolean }) {
   return (
@@ -30,10 +29,10 @@ export default function Footer({ subpage = false }: { subpage?: boolean }) {
           </div>
 
           <a
-            href={ORDERS_URL}
+            href="/marketing-partnerships"
             className="group inline-flex items-center gap-2 self-start font-display text-lg font-semibold md:self-auto"
           >
-            Design services
+            Build With Us
             <span className="grid size-12 place-items-center rounded-full bg-[#FFC700] text-[#131311] transition-transform duration-300 group-hover:rotate-45">
               <ArrowUpRight className="size-5" />
             </span>
@@ -42,7 +41,7 @@ export default function Footer({ subpage = false }: { subpage?: boolean }) {
 
         <div className="mt-16 flex flex-col items-start justify-between gap-6 border-t border-[#F6F4EE]/12 pt-8 md:flex-row md:items-center">
           <a href={subpage ? "/#top" : "#top"} className="flex shrink-0 items-center" aria-label="Yoo360 home">
-            <img src="/brand/yoo360-primary-white.png" alt="Yoo360" width={2013} height={354} className="block h-auto w-32 object-contain" />
+            <img src="/brand/yoo360-primary-white.webp" alt="Yoo360" width={2013} height={354} className="block h-auto w-32 object-contain" />
           </a>
 
           <div className="flex items-center gap-3">

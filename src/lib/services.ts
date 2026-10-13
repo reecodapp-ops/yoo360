@@ -3,14 +3,6 @@ export type ServicePage = {
   next: string; nextHref?: string;
 };
 export const servicePages: ServicePage[] = [
-  { slug: 'brand-strategy-identity', title: 'Brand Strategy & Identity', service: 'brand',
-    intro: 'We study your customers, shape your positioning and build a brand people understand, recognize and choose.',
-    outputs: ['Customer and market understanding', 'Brand positioning and messaging', 'Logo and visual identity systems', 'Packaging and brand rollout'],
-    next: 'Discuss your brand project' },
-  { slug: 'campaigns-market-launches', title: 'Campaigns & Market Launches', service: 'campaigns',
-    intro: 'Prepare your brand for the market. We connect customer insight, local context and creative execution to help your product reach the people it is built for.',
-    outputs: ['Customer and market research', 'Messaging tailored to your audience', 'Campaign concepts and creative production', 'Launch planning and campaign execution'],
-    next: 'Discuss your campaign' },
   { slug: 'websites-digital-products', title: 'Websites & Digital Products', service: 'digital',
     intro: 'Websites, apps and digital tools shaped around your business and the people using them. Share your goals and required features so we can prepare an accurate proposal.',
     outputs: ['Business websites and ecommerce', 'Mobile apps and marketplaces', 'Customer journeys and interface design', 'Development, launch and agreed support'],
@@ -27,7 +19,7 @@ export function enquiryLink(service: string, plan = '') {
   return '/discuss-a-project?' + params;
 }
 export const partnershipPlans = [
-  { slug: 'starter', name: 'Starter', subtitle: 'Content Engine', monthly: 2000, saving: 0,
+  { slug: 'starter', name: 'Starter', subtitle: 'Content Engine', monthly: 2000, saving: 300,
     goal: 'Build a clear, professional brand presence with consistent creative output.',
     inclusions: ['10 graphic artworks per month', '7 short-form videos per month', 'Up to 2 active requests at a time', '2 revisions per artwork', '1 revision per video', 'Dedicated creative team'],
     audience: 'New and growing brands needing consistency and credibility.', duration: '2 to 3 months' },

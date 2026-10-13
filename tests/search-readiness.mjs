@@ -7,10 +7,11 @@ const cases = [
   ['dist/discuss-a-project/index.html', '/discuss-a-project', 'Discuss a'],
   ['dist/marketing-partnerships/index.html', '/marketing-partnerships', 'Build. Grow.'],
   ...['starter', 'growth', 'scale', 'enterprise'].map(slug => [`dist/marketing-partnerships/${slug}/index.html`, '/marketing-partnerships/' + slug, slug[0].toUpperCase() + slug.slice(1) + ' partnership.']),
-  ...[['brand-strategy-identity', 'Brand Strategy &amp; Identity'], ['campaigns-market-launches', 'Campaigns &amp; Market Launches'], ['websites-digital-products', 'Websites &amp; Digital Products'], ['video-motion-production', 'Video &amp; Motion Production']].map(([slug, title]) => [`dist/${slug}/index.html`, '/' + slug, title]),
+  ...[['websites-digital-products', 'Websites &amp; Digital Products'], ['video-motion-production', 'Video &amp; Motion Production']].map(([slug, title]) => [`dist/${slug}/index.html`, '/' + slug, title]),
+  ['dist/about/index.html', '/about', 'About '],
   ['dist/team/index.html', '/team', 'The Founding Team'],
   ['dist/team/melkisedeck-ruposo/index.html', '/team/melkisedeck-ruposo', 'Melkisedeck Ruposo'],
-  ['dist/team/berton-ruposo/index.html', '/team/berton-ruposo', 'Berton Ruposo'],
+  ['dist/team/berton-ruposo/index.html', '/team/berton-ruposo', 'Berton Ruposo Mwisha'],
   ['dist/team/bertin-victoire/index.html', '/team/bertin-victoire', 'Bertin Victoire'],
 ];
 const titles = new Set();
@@ -27,6 +28,8 @@ for (const [file, route, heading] of cases) {
   assert.ok(html.includes(`<meta property="og:url" content="${origin}${route}"`));
   assert.ok(html.includes('content="index, follow, max-image-preview:large"'));
   assert.equal((html.match(/name="description"/g) || []).length, 1);
+  assert.ok(html.match(/name="description" content="([^"]+)"/)[1].replace(/&amp;/g,'&').length < 160);
+  assert.equal((body.match(/<h1(?: |\>)/g)||[]).length,1);
   assert.ok(html.includes(`<meta property="og:image" content="${origin}/brand/yoo360-og.png"`));
   assert.ok(html.includes('name="twitter:card" content="summary_large_image"'));
   assert.ok(html.includes('sizes="96x96" href="/favicon.png"'));
@@ -51,13 +54,13 @@ for (const [file, route, heading] of cases) {
 }
 const home = await readFile('dist/index.html', 'utf8');
 assert.ok(home.includes('East Africa'));
-for (const service of ['Brand Strategy &amp; Identity', 'Campaigns &amp; Market Launches', 'Marketing Partnerships', 'Websites &amp; Digital Products']) {
+for (const service of ['Brand Strategy &amp; Identity', 'Video &amp; Motion Production', 'Marketing Partnerships', 'Websites &amp; Digital Products']) {
   assert.ok(home.toLowerCase().split('<body>')[1].includes(service.toLowerCase()), `${service} is present in page content`);
 }
 assert.ok(home.includes('>72</span>'), 'Project count is correct before JavaScript runs');
 const robots = await readFile('dist/robots.txt', 'utf8');
 assert.ok(robots.includes('User-agent: *\nAllow: /'));
-assert.ok(!robots.includes('Disallow: /'));
+assert.ok(!/^Disallow: \/$/m.test(robots));
 assert.ok(robots.includes(`Sitemap: ${origin}/sitemap.xml`));
 const sitemap = await readFile('dist/sitemap.xml', 'utf8');
 assert.deepEqual([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]), [...cases.map(([, route]) => origin + route), ...['/order-a-design', '/order-a-design/order/logo', '/order-a-design/order/graphics'].map(route => origin + route)]);
@@ -91,4 +94,4 @@ assert.ok(!footer.includes('href="/team"'), 'The team entry has moved out of the
 const shareImage = await readFile('dist/brand/yoo360-og.png');
 assert.equal(shareImage.readUInt32BE(16), 576);
 assert.equal(shareImage.readUInt32BE(20), 303);
-console.log('PASS All eighteen public pages contain visible HTML, valid metadata and schema, working assets, the supplied sharing image and canonical sitemap entries; the error page is excluded from indexing.');
+console.log('PASS All seventeen public pages contain visible HTML, valid metadata and schema, working assets, the supplied sharing image and canonical sitemap entries; the error page is excluded from indexing.');

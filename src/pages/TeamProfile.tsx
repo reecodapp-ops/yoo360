@@ -8,6 +8,7 @@ import type { TeamMember } from "@/lib/team";
 const icons = { Instagram, LinkedIn: Linkedin, Website: Globe };
 
 export default function TeamProfile({ member }: { member: TeamMember }) {
+  const profileName = member.fullName || member.name;
   const reduceMotion = useReducedMotion();
   return (
     <div className="min-h-screen bg-white">
@@ -24,12 +25,13 @@ export default function TeamProfile({ member }: { member: TeamMember }) {
             </div>
           </div>
           <div className="mx-auto w-full min-w-0 max-w-xl lg:mx-0">
-            <h1 className="font-display text-5xl leading-[1.04] font-bold tracking-[-0.04em] md:text-6xl lg:text-7xl">{member.name}</h1>
+            <h1 className="font-display text-5xl leading-[1.04] font-bold tracking-[-0.04em] md:text-6xl lg:text-7xl">{profileName}</h1>
             <h2 className="mt-4 font-display text-xl leading-snug font-semibold text-[#A17A00] md:text-2xl">{member.role}</h2>
+            <p className="mt-6 text-sm leading-relaxed text-[#131311]/60">{profileName} is {member.role} at <a href="/about" className="underline decoration-[#FFC700] decoration-2 underline-offset-4">Yoo360</a>.</p>
             <p className="mt-8 text-base leading-[1.85] text-[#131311]/70 md:text-lg">{member.bio}</p>
             {member.connections.length > 0 && (
               <section aria-labelledby="connect-heading" className="mt-9 border-t border-[#131311]/10 pt-7">
-                <h3 id="connect-heading" className="text-xs font-semibold tracking-[0.18em] uppercase text-[#131311]/50">Connect</h3>
+                <h2 id="connect-heading" className="text-xs font-semibold tracking-[0.18em] uppercase text-[#131311]/50">Connect</h2>
                 <div className="mt-4 flex items-center gap-3">
                   {member.connections.map(connection => {
                     const Icon = icons[connection.platform];
