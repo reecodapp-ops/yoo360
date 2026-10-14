@@ -31,8 +31,8 @@ for (const path of [...publicPages, '/checkout', '/payment-status', '/project-br
     assert.ok(!html.includes('rel="canonical"'));
   }
   for (const match of html.matchAll(/(?:href|src)="(\/[^"#?]+)"/g)) {
-    if (/\.(js|css|png)$/.test(match[1])) await access('dist' + match[1]);
-    if (!/\.(js|css|png)$/.test(match[1])) assert.ok(match[1] === '/' || match[1].startsWith('/order-a-design'));
+    if (/\.(js|css|png|webp|svg|ttf)$/.test(match[1])) await access('dist' + match[1]);
+    if (!/\.(js|css|png|webp|svg|ttf)$/.test(match[1])) assert.ok(['/','/discuss-a-project','/marketing-partnerships','/video-motion-production','/websites-digital-products'].includes(match[1]) || match[1].startsWith('/order-a-design'));
   }
   assert.ok(!html.includes('href="/checkout"') && !html.includes('href="/order/logo"'));
 }
@@ -41,7 +41,7 @@ assert.ok(landing.includes('What are we building') && landing.includes('today?')
 assert.ok(landing.includes('Logo &amp; Brand Visual Identity') && landing.includes('Marketing &amp; Print Design'));
 assert.ok(!landing.includes('<footer'));
 const home = await readFile('dist/index.html', 'utf8');
-assert.ok(home.includes('href="/order-a-design"'));
+assert.ok(home.includes('href="/order-a-design/order/logo"'));
 assert.ok(!home.includes('yoo360-studio-orders.berton-thedezi.chatgpt.site'));
 assert.ok(!home.includes('/order-a-design/assets/'), 'Order styles are isolated from the homepage');
 assert.deepEqual(await readFile('dist/logo.png'), await readFile('dist/favicon.png'), 'Legacy icon URL serves the same square brand mark');

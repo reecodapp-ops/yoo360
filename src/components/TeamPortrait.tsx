@@ -12,7 +12,7 @@ export default function TeamPortrait({ member, priority = false, profile = false
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           decoding="async"
-          className="h-full w-full object-cover transition-transform duration-500 motion-reduce:transition-none group-hover:scale-[1.025]"
+          className={`h-full w-full object-cover grayscale transition-transform duration-500 motion-reduce:transition-none ${!profile && member.slug === "melkisedeck-ruposo" ? "scale-[1.27] group-hover:scale-[1.3]" : "group-hover:scale-[1.025]"}`}
           style={{ objectPosition: member.portraitPosition || "center" }}
         />
       ) : (

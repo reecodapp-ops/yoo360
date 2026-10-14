@@ -23,7 +23,7 @@ export default function Clients() {
           {row.map((c, i) => (
             <div key={i} className="flex items-center gap-3">
               <img
-                src={`/assets/clients/${c}.png`}
+                src={`/assets/clients/${c}.webp`}
                 alt={names[c] ?? c}
                 loading="lazy"
                 className="h-9 w-auto object-contain brightness-0"

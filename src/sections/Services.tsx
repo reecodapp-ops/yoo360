@@ -3,10 +3,10 @@ import { motion, useMotionValue, useSpring, AnimatePresence } from "framer-motio
 import { ArrowUpRight } from "lucide-react";
 
 const services = [
-  { n: "01", title: "Brand Strategy & Identity", desc: "Customer insight, clear positioning and visual systems that make your brand recognizable and ready for the market.", tags: ["Strategy", "Identity", "Packaging"], img: "/assets/visual/brand.webp", href: "/brand-strategy-identity" },
-  { n: "02", title: "Campaigns & Market Launches", desc: "Market understanding, tailored messaging and creative execution that connect your product with its customers.", tags: ["Campaigns", "Production", "Launches"], img: "/assets/works/work-1.webp", href: "/campaigns-market-launches" },
-  { n: "03", title: "Marketing Partnerships", desc: "Your ongoing creative and marketing team, with monthly plans starting at $2,000.", tags: ["Planning", "Marketing", "Monthly support"], img: "/assets/works/work-web.webp", href: "/marketing-partnerships" },
-  { n: "04", title: "Websites & Digital Products", desc: "Websites, ecommerce, apps and marketplaces built around your goals. Pricing follows your project's scope.", tags: ["Websites", "Apps", "UX"], img: "/assets/works/work-app.webp", href: "/websites-digital-products" },
+  { n: "01", title: "Brand Strategy & Identity", desc: "Customer insight, brand positioning and a clear visual identity.", tags: ["Strategy", "Identity", "Packaging"], img: "/assets/visual/brand.webp", href: "/order-a-design/order/logo" },
+  { n: "02", title: "Marketing Partnerships", desc: "Your ongoing team for strategy, creative production and marketing.", tags: ["Campaigns", "Launches", "Monthly support"], img: "/assets/works/work-1.webp", href: "/marketing-partnerships" },
+  { n: "03", title: "Video & Motion Production", desc: "Video, films and animation shaped around your project.", tags: ["Films", "Video", "Motion"], img: "/assets/works/work-web.webp", href: "/video-motion-production" },
+  { n: "04", title: "Websites & Digital Products", desc: "Websites, apps and digital tools built around your business.", tags: ["Websites", "Apps", "UX"], img: "/assets/works/work-app.webp", href: "/websites-digital-products" },
 ];
 
 export default function Services() {

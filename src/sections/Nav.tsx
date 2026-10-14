@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, Menu, X } from "lucide-react";
-import { ORDERS_URL } from "@/lib/links";
 
 const links = [
   { label: "Services", href: "#services" },
@@ -32,7 +31,7 @@ export default function Nav({ projectPage = false }: { projectPage?: boolean }) 
     >
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-10">
         <a href={homeLink("#top")} className="flex shrink-0 items-center" aria-label="Yoo360 home">
-          <img src="/brand/yoo360-primary-white.png" alt="Yoo360" width={2013} height={354} className="block h-auto w-32 object-contain brightness-0 md:w-36" />
+          <img src="/brand/yoo360-primary-white.webp" alt="Yoo360" width={2013} height={354} className="block h-auto w-32 object-contain brightness-0 md:w-36" />
         </a>
 
         <ul className="hidden items-center gap-8 md:flex">
@@ -50,8 +49,8 @@ export default function Nav({ projectPage = false }: { projectPage?: boolean }) 
         </ul>
 
         <div className="flex items-center gap-3">
-          <a href={ORDERS_URL} className="hidden text-sm font-medium text-[#131311]/70 transition-colors hover:text-[#131311] lg:inline-flex">
-            Design services
+          <a href="/marketing-partnerships" className="hidden text-sm font-medium text-[#131311]/70 transition-colors hover:text-[#131311] lg:inline-flex">
+            Build With Us
           </a>
           <a
             href="/discuss-a-project"
@@ -94,7 +93,7 @@ export default function Nav({ projectPage = false }: { projectPage?: boolean }) 
                 </li>
               ))}
               <li className="pt-2">
-                <a href={ORDERS_URL} onClick={() => setOpen(false)} className="mb-4 block px-3 py-3 font-display text-2xl font-semibold">Design services</a>
+                <a href="/marketing-partnerships" onClick={() => setOpen(false)} className="mb-4 block px-3 py-3 font-display text-2xl font-semibold">Build With Us</a>
                 <a
                   href="/discuss-a-project"
                   onClick={() => setOpen(false)}

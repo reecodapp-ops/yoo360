@@ -39,6 +39,7 @@ export default function Story() {
               strategists and developers work together across brand identity,
               campaigns, ongoing marketing and digital products.
             </p>
+            <a href="/about" className="mt-6 block text-sm font-semibold underline decoration-[#FFC700] decoration-2 underline-offset-8">About Yoo360</a>
             <a href="/team" className="group mt-8 inline-flex items-center gap-2 rounded-full bg-[#131311] px-6 py-3 text-sm font-semibold text-[#F6F4EE] transition-colors hover:bg-[#FFC700] hover:text-[#131311] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#A17A00]">
               Meet the team <ArrowUpRight aria-hidden="true" className="size-4 transition-transform duration-300 motion-reduce:transition-none group-hover:rotate-45" />
             </a>

@@ -10,8 +10,8 @@ const shareImageAlt = 'Yoo360. Helping brands that do good look good.';
 const pages = [
   {
     path: '/', file: 'dist/index.html',
-    title: 'Yoo360 | Branding, Graphic & Web Design in East Africa',
-    description: 'Yoo360 helps brands in East Africa and beyond with logo design, visual identity, marketing design, websites and mobile apps. Explore monthly marketing partnerships or discuss a project.',
+    title: 'Yoo360 | Brand Strategy & Market Growth in Africa',
+    description: 'Yoo360 helps ambitious businesses enter and grow in African markets through customer insight, brand strategy, launches and ongoing marketing partnerships.',
     type: 'WebPage',
   },
   {
@@ -30,12 +30,14 @@ const pages = [
 
 const organization = {
   '@type': 'Organization', '@id': `${origin}/#organization`,
-  name: 'Yoo360', url: `${origin}/`, logo,
-  description: 'Brand strategy, market launches, monthly marketing partnerships, websites and digital products for businesses in East Africa and beyond.',
+  name: 'Yoo360', url: `${origin}/`, logo, email: 'yoo360agency@gmail.com',
+  description: 'Yoo360 helps ambitious businesses enter and grow in African markets through customer insight, brand strategy, launches and ongoing marketing partnerships.',
   areaServed: { '@type': 'Place', name: 'East Africa' },
+  contactPoint: { '@type': 'ContactPoint', contactType: 'Project enquiries', email: 'yoo360agency@gmail.com', url: `${origin}/discuss-a-project`, availableLanguage: 'English' },
+  founder: { '@id': `${origin}/team/berton-ruposo#person` },
   hasOfferCatalog: {
     '@type': 'OfferCatalog', name: 'Yoo360 services',
-    itemListElement: ['Brand Strategy & Identity', 'Campaigns & Market Launches', 'Marketing Partnerships', 'Websites & Digital Products', 'Video & Motion Production'].map(name => ({
+    itemListElement: ['Brand Strategy & Identity', 'Marketing Partnerships', 'Websites & Digital Products', 'Video & Motion Production'].map(name => ({
       '@type': 'Offer', itemOffered: { '@type': 'Service', name, provider: { '@id': `${origin}/#organization` } },
     })),
   },
@@ -61,7 +63,7 @@ function metadata(page) {
     pageSchema.about = { '@id': personId };
     graph.push({
       '@type': 'Person', '@id': personId, url,
-      name: member.name, jobTitle: member.role, description: member.bio,
+      name: member.fullName || member.name, jobTitle: member.role, description: member.bio,
       worksFor: { '@id': `${origin}/#organization` },
       ...(member.portrait ? { image: origin + member.portrait } : {}),
       sameAs: member.connections.map(connection => connection.url),
@@ -117,9 +119,10 @@ await build({
 });
 const { renderPage, teamMembers, servicePages, partnershipPlans } = await import(pathToFileURL(path.resolve('dist-ssr/prerender.js')).href);
 pages.splice(2, 0,
-  { path: '/marketing-partnerships', file: 'dist/marketing-partnerships/index.html', title: 'Monthly Marketing Partnerships | Yoo360', description: 'Explore Starter, Growth, Scale and Enterprise creative and marketing partnerships. Monthly plans from $2,000 with defined production, campaign and team support.', type: 'CollectionPage' },
-  ...partnershipPlans.map(plan => ({ path: '/marketing-partnerships/' + plan.slug, file: 'dist/marketing-partnerships/' + plan.slug + '/index.html', title: plan.name + ' Marketing Partnership | Yoo360', description: plan.goal + ' Monthly pricing ' + (plan.slug === 'enterprise' ? 'from ' : '') + '$' + plan.monthly.toLocaleString('en-US') + '.', type: 'WebPage', plan })),
-  ...servicePages.map(service => ({ path: '/' + service.slug, file: 'dist/' + service.slug + '/index.html', title: service.title + ' | Yoo360', description: service.intro, type: 'WebPage', service })),
+  { path: '/marketing-partnerships', file: 'dist/marketing-partnerships/index.html', title: 'Marketing Partnerships, Campaigns & Launches | Yoo360', description: 'Explore Yoo360 marketing partnerships for campaigns, market launches and ongoing monthly support. Choose a project or a defined monthly plan.', type: 'CollectionPage' },
+  ...partnershipPlans.map(plan => ({ path: '/marketing-partnerships/' + plan.slug, file: 'dist/marketing-partnerships/' + plan.slug + '/index.html', title: plan.name + ' Marketing Partnership | Yoo360', description: `Explore the ${plan.name} marketing partnership from Yoo360. See monthly scope, pricing and creative support, then discuss your business priorities.`, type: 'WebPage', plan })),
+  ...servicePages.map(service => ({ path: '/' + service.slug, file: 'dist/' + service.slug + '/index.html', title: service.title + ' | Yoo360', description: { brand: 'Build a clear brand with Yoo360. Explore customer insight, positioning, visual identity and packaging tailored to your business.', video: 'Discuss video and motion production with Yoo360. Films, documentaries, brand videos and animation receive a quote based on your project scope.', digital: 'Discuss websites, apps and digital products with Yoo360. Share your goals and requirements for a tailored scope, timeline and quote.' }[service.service], type: 'WebPage', service })),
+  { path: '/about', file: 'dist/about/index.html', title: 'About Yoo360 | Brand Strategy & Marketing Studio', description: 'Learn about Yoo360, our brand strategy and marketing work in East Africa and beyond, and the founding team behind the studio.', type: 'AboutPage' },
   {
     path: '/team', file: 'dist/team/index.html',
     title: 'The Founding Team | Yoo360',
@@ -128,8 +131,8 @@ pages.splice(2, 0,
   },
   ...teamMembers.map(member => ({
     path: `/team/${member.slug}`, file: `dist/team/${member.slug}/index.html`,
-    title: `${member.name} | ${member.role} | Yoo360`,
-    description: member.bio,
+    title: `${member.fullName || member.name} | ${member.role} | Yoo360`,
+    description: member.metaDescription,
     type: 'ProfilePage', member,
   })),
 );
@@ -141,10 +144,10 @@ for (const page of pages) {
   await writeFile(page.file, html);
 }
 
-const lastModified = new Date().toISOString().slice(0, 10);
+// Build-generated from the current public route registry. No fabricated modification dates.
 await writeFile('dist/sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${pages.filter(page => !page.noindex).map(page => `  <url><loc>${origin}${page.path}</loc><lastmod>${lastModified}</lastmod></url>`).join('\n')}
+${pages.filter(page => !page.noindex).map(page => `  <url><loc>${origin}${page.path}</loc></url>`).join('\n')}
 </urlset>\n`);
-await writeFile('dist/robots.txt', `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`);
+await writeFile('dist/robots.txt', ['*', 'Googlebot', 'Googlebot-Image', 'Bingbot', 'GPTBot', 'OAI-SearchBot', 'CCBot'].map(bot => `User-agent: ${bot}\nAllow: /\nDisallow: /api/\nDisallow: /admin\n`).join('\n') + `\nSitemap: ${origin}/sitemap.xml\n`);
 console.log('Prerendered all public pages and the 404 page; generated canonical metadata, structured data, sitemap and robots.txt.');
