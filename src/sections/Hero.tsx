@@ -41,14 +41,20 @@ export default function Hero() {
       <div className="pointer-events-none absolute top-1/2 -left-40 size-[360px] rounded-full bg-[#FFC700]/15 blur-3xl" />
 
       <div className="mx-auto max-w-7xl">
-        <h1 className="font-display text-[13vw] leading-[0.95] font-bold tracking-[-0.03em] sm:text-[11vw] lg:text-[7.5rem]">
-          <motion.span variants={fadeUp} initial="hidden" animate="show" custom={1} className="block">
-            We design what
+        <h1 className="font-display text-[clamp(2.55rem,10.3vw,4.75rem)] leading-[1.03] font-bold tracking-[-0.03em] md:text-[clamp(4rem,6.3vw,6.8rem)]">
+          <motion.span variants={fadeUp} initial="hidden" animate="show" custom={1} className="block md:inline-block">
+            We design
           </motion.span>
-          <motion.span variants={fadeUp} initial="hidden" animate="show" custom={2} className="block">
-            <em className="font-serif-accent font-normal italic text-[#C79A00]">sells.</em> We build
+          {" "}
+          <motion.span variants={fadeUp} initial="hidden" animate="show" custom={2} className="block md:inline-block">
+            what <em className="font-serif-accent font-normal italic text-[#C79A00]">sells.</em>
           </motion.span>
-          <motion.span variants={fadeUp} initial="hidden" animate="show" custom={3} className="block">
+          <br className="hidden md:block" />
+          <motion.span variants={fadeUp} initial="hidden" animate="show" custom={3} className="block md:inline-block">
+            We build
+          </motion.span>
+          {" "}
+          <motion.span variants={fadeUp} initial="hidden" animate="show" custom={4} className="block md:inline-block">
             what <span className="relative inline-block">
               <em className="font-serif-accent font-normal italic">matters.</em>
               <motion.span

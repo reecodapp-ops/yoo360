@@ -3,7 +3,7 @@ import { access, readFile } from 'node:fs/promises';
 
 const origin = 'https://www.theyoo360.com';
 const cases = [
-  ['dist/index.html', '/', 'We design what'],
+  ['dist/index.html', '/', 'We design'],
   ['dist/discuss-a-project/index.html', '/discuss-a-project', 'Discuss a'],
   ['dist/marketing-partnerships/index.html', '/marketing-partnerships', 'Build. Grow.'],
   ...['starter', 'growth', 'scale', 'enterprise'].map(slug => [`dist/marketing-partnerships/${slug}/index.html`, '/marketing-partnerships/' + slug, slug[0].toUpperCase() + slug.slice(1) + ' partnership.']),
@@ -53,6 +53,7 @@ for (const [file, route, heading] of cases) {
   }
 }
 const home = await readFile('dist/index.html', 'utf8');
+assert.ok(home.includes('what <em') && home.includes('We build'), 'The homepage headline keeps both complete thoughts');
 assert.ok(home.includes('East Africa'));
 for (const service of ['Brand Strategy &amp; Identity', 'Video &amp; Motion Production', 'Marketing Partnerships', 'Websites &amp; Digital Products']) {
   assert.ok(home.toLowerCase().split('<body>')[1].includes(service.toLowerCase()), `${service} is present in page content`);

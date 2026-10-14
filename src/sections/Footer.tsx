@@ -12,10 +12,11 @@ export default function Footer({ subpage = false }: { subpage?: boolean }) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.7 }}
-          className="max-w-5xl font-display text-[11vw] leading-[1.02] font-bold tracking-[-0.03em] md:text-7xl"
+          className="max-w-5xl font-display text-[clamp(2.55rem,9.3vw,4.75rem)] leading-[1.08] font-bold tracking-[-0.03em] md:text-7xl"
         >
-          We help brands that do good,{" "}
-          <em className="font-serif-accent font-normal italic text-[#FFC700]">look good.</em>
+          <span className="block md:inline">We help brands</span>{" "}
+          <span className="block md:inline">that do good,</span>{" "}
+          <em className="block font-serif-accent font-normal italic text-[#FFC700] md:inline-block">look good.</em>
         </motion.h2>
 
         <div className="mt-12 flex flex-col justify-between gap-10 border-t border-[#F6F4EE]/12 pt-10 md:flex-row md:items-end">

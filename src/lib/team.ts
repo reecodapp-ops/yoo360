@@ -20,7 +20,7 @@ export const teamMembers: TeamMember[] = [
     bio: "Specializing in branding, visual identity, and digital content creation. Melkisedeck brings brands to life through high impact motion design and graphic artistry.",
     initials: "MR",
     portrait: "/assets/team/melkisedeck-ruposo.webp",
-    portraitPosition: "54% center",
+    portraitPosition: "50% center",
     connections: [
       { platform: "Instagram", url: "https://www.instagram.com/mlkruposo/" },
       { platform: "LinkedIn", url: "https://www.linkedin.com/in/melkisedeck-ruposo-813347368/" },

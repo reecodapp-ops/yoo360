@@ -82,6 +82,12 @@
     @apply bg-[#F6F4EE] text-[#131311] antialiased;
     font-family: "Inter", sans-serif;
   }
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
   ::selection {
     background: #ffc700;
     color: #131311;
