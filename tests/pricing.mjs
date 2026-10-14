@@ -14,6 +14,7 @@ for (let combination = 0; combination < 8; ++combination) {
  const selection = { ...cart, service: 'graphics', artworks: [art] };
  assert.equal(price(selection), expected[combination]);
  assert.equal(lines(selection).reduce((sum, line) => sum + line.cents, 0), price(selection));
+ if (art.priority) assert.ok(lines(selection)[0].detail.includes('Rush Delivery (Under 6 hours)'));
  assert.equal(price({ ...selection, production: { ...selection.production, enabled: true } }), expected[combination]);
 }
 for (let combination = 0; combination < (1 << ADDONS.length); ++combination) {

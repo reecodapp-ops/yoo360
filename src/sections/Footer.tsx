@@ -30,7 +30,7 @@ export default function Footer({ subpage = false }: { subpage?: boolean }) {
           </div>
 
           <a
-            href="/marketing-partnerships"
+            href="/order-a-design"
             className="group inline-flex items-center gap-2 self-start font-display text-lg font-semibold md:self-auto"
           >
             Build With Us
