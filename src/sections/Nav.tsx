@@ -49,7 +49,7 @@ export default function Nav({ projectPage = false }: { projectPage?: boolean }) 
         </ul>
 
         <div className="flex items-center gap-3">
-          <a href="/marketing-partnerships" className="hidden text-sm font-medium text-[#131311]/70 transition-colors hover:text-[#131311] lg:inline-flex">
+          <a href="/order-a-design" className="hidden text-sm font-medium text-[#131311]/70 transition-colors hover:text-[#131311] lg:inline-flex">
             Build With Us
           </a>
           <a
@@ -93,7 +93,7 @@ export default function Nav({ projectPage = false }: { projectPage?: boolean }) 
                 </li>
               ))}
               <li className="pt-2">
-                <a href="/marketing-partnerships" onClick={() => setOpen(false)} className="mb-4 block px-3 py-3 font-display text-2xl font-semibold">Build With Us</a>
+                <a href="/order-a-design" onClick={() => setOpen(false)} className="mb-4 block px-3 py-3 font-display text-2xl font-semibold">Build With Us</a>
                 <a
                   href="/discuss-a-project"
                   onClick={() => setOpen(false)}

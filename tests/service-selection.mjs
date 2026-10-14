@@ -17,7 +17,11 @@ assert.ok(page.includes('MOST<br/>CHOSEN'));assert.ok(page.includes('Save $300')
 for(const slug of ['video-motion-production','websites-digital-products']){
  const service=await readFile(`dist/${slug}/index.html`,'utf8');
  assert.ok(service.includes('Build With Us'));
+ assert.ok(service.includes('href="/order-a-design"'));
  assert.ok(!service.includes('Order individual artwork')&&!service.includes('Explore monthly partnerships'));
 }
 const home=await readFile('dist/index.html','utf8');assert.ok(home.includes('src="/brand/yoo360-primary-white.webp"'));await access('dist/brand/yoo360-primary-white.webp');
+assert.ok(home.includes('href="/order-a-design"') && home.includes('Build With Us'));
+const team=await readFile('dist/team/index.html','utf8');
+assert.ok(team.includes('href="/order-a-design"') && team.includes('Build With Us'));
 console.log('PASS Four matching linked cards, supplied illustration assets, compact four-plan-only page, preselected monthly enquiries, unified secondary CTA and homepage logo asset.');
