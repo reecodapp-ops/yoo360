@@ -32,7 +32,7 @@ for (const path of [...publicPages, '/checkout', '/payment-status', '/project-br
   }
   for (const match of html.matchAll(/(?:href|src)="(\/[^"#?]+)"/g)) {
     if (/\.(js|css|png|webp|svg|ttf)$/.test(match[1])) await access('dist' + match[1]);
-    if (!/\.(js|css|png|webp|svg|ttf)$/.test(match[1])) assert.ok(['/','/discuss-a-project','/marketing-partnerships','/video-motion-production','/websites-digital-products'].includes(match[1]) || match[1].startsWith('/order-a-design'));
+    if (!/\.(js|css|png|webp|svg|ttf)$/.test(match[1])) assert.ok(['/','/discuss-a-project','/other-enquiry','/marketing-partnerships','/video-motion-production','/websites-digital-products'].includes(match[1]) || match[1].startsWith('/order-a-design'));
   }
   assert.ok(!html.includes('href="/checkout"') && !html.includes('href="/order/logo"'));
 }

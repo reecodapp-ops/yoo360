@@ -125,6 +125,7 @@ export default function Services() {
             </motion.a>
           ))}
         </div>
+        <a href="/order-a-design" className="group mt-10 inline-flex items-center gap-2 rounded-full bg-[#131311] px-7 py-3.5 text-sm font-semibold text-[#F6F4EE] transition-colors hover:bg-[#FFC700] hover:text-[#131311]">Start a Project <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" /></a>
       </div>
     </section>
   );

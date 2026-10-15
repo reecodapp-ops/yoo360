@@ -5,6 +5,7 @@ const origin = 'https://www.theyoo360.com';
 const cases = [
   ['dist/index.html', '/', 'We design'],
   ['dist/discuss-a-project/index.html', '/discuss-a-project', 'Discuss a'],
+  ['dist/other-enquiry/index.html', '/other-enquiry', 'Tell us what you'],
   ['dist/marketing-partnerships/index.html', '/marketing-partnerships', 'Build. Grow.'],
   ...['starter', 'growth', 'scale', 'enterprise'].map(slug => [`dist/marketing-partnerships/${slug}/index.html`, '/marketing-partnerships/' + slug, slug[0].toUpperCase() + slug.slice(1) + ' partnership.']),
   ...[['websites-digital-products', 'Websites &amp; Digital Products'], ['video-motion-production', 'Video &amp; Motion Production']].map(([slug, title]) => [`dist/${slug}/index.html`, '/' + slug, title]),
@@ -64,7 +65,7 @@ assert.ok(robots.includes('User-agent: *\nAllow: /'));
 assert.ok(!/^Disallow: \/$/m.test(robots));
 assert.ok(robots.includes(`Sitemap: ${origin}/sitemap.xml`));
 const sitemap = await readFile('dist/sitemap.xml', 'utf8');
-assert.deepEqual([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]), [...cases.map(([, route]) => origin + route), ...['/order-a-design', '/order-a-design/order/logo', '/order-a-design/order/graphics'].map(route => origin + route)]);
+assert.deepEqual([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]).sort(), [...cases.map(([, route]) => origin + route), ...['/order-a-design', '/order-a-design/order/logo', '/order-a-design/order/graphics'].map(route => origin + route)].sort());
 const missing = await readFile('dist/404.html', 'utf8');
 assert.ok(missing.includes('content="noindex, follow"'));
 assert.ok(!missing.includes('rel="canonical"'));
@@ -95,4 +96,4 @@ assert.ok(!footer.includes('href="/team"'), 'The team entry has moved out of the
 const shareImage = await readFile('dist/brand/yoo360-og.png');
 assert.equal(shareImage.readUInt32BE(16), 576);
 assert.equal(shareImage.readUInt32BE(20), 303);
-console.log('PASS All seventeen public pages contain visible HTML, valid metadata and schema, working assets, the supplied sharing image and canonical sitemap entries; the error page is excluded from indexing.');
+console.log('PASS All eighteen public pages contain visible HTML, valid metadata and schema, working assets, the supplied sharing image and canonical sitemap entries; the error page is excluded from indexing.');

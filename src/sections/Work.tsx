@@ -82,6 +82,7 @@ export default function Work() {
             </motion.figure>
           ))}
         </div>
+        <a href="/order-a-design" className="group mt-10 inline-flex items-center gap-2 rounded-full bg-[#FFC700] px-7 py-3.5 text-sm font-semibold text-[#131311] transition-transform hover:scale-105">Start a Project <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" /></a>
       </div>
     </section>
   );

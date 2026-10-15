@@ -6,6 +6,7 @@ assert.equal(cards.length,4);
 for(const [i,route] of ['/order-a-design/order/logo','/order-a-design/order/graphics','/discuss-a-project?service=video','/marketing-partnerships'].entries())assert.ok(cards[i].includes(`href="${route}"`));
 for(const card of cards){assert.ok(card.includes('service-card-head'));assert.ok(card.includes('service-illustration'));assert.ok(card.includes('service-title'));assert.ok(card.includes('class="from"'));}
 assert.ok(!html.includes('engagement-grid')&&!html.includes('Work with Yoo360'));
+assert.ok(html.includes('Need something different?') && html.includes('href="/other-enquiry"'));
 const page=await readFile('dist/marketing-partnerships/index.html','utf8');
 assert.equal((page.match(/class="pricing-card"/g)||[]).length,4);
 assert.equal((page.match(/class="subscribe-button"/g)||[]).length,4);
@@ -16,12 +17,16 @@ assert.ok(!page.includes('One campaign or market launch')&&!page.includes('How w
 assert.ok(page.includes('MOST<br/>CHOSEN'));assert.ok(page.includes('Save $300'));
 for(const slug of ['video-motion-production','websites-digital-products']){
  const service=await readFile(`dist/${slug}/index.html`,'utf8');
- assert.ok(service.includes('Build With Us'));
+ assert.ok(service.includes('Start a Project'));
  assert.ok(service.includes('href="/order-a-design"'));
  assert.ok(!service.includes('Order individual artwork')&&!service.includes('Explore monthly partnerships'));
 }
 const home=await readFile('dist/index.html','utf8');assert.ok(home.includes('src="/brand/yoo360-primary-white.webp"'));await access('dist/brand/yoo360-primary-white.webp');
-assert.ok(home.includes('href="/order-a-design"') && home.includes('Build With Us'));
+assert.ok(home.includes('href="/order-a-design"') && home.includes('Start a Project'));
+assert.ok(!home.includes('>Discuss a project<') && !home.includes('Build With Us'));
+for(const section of ['services','work'])assert.ok(home.match(new RegExp(`<section[^>]+id="${section}"[\\s\\S]*?<\\/section>`))?.[0].includes('Start a Project'));
 const team=await readFile('dist/team/index.html','utf8');
-assert.ok(team.includes('href="/order-a-design"') && team.includes('Build With Us'));
+assert.ok(team.includes('href="/order-a-design"') && team.includes('Start a Project'));
+const other=await readFile('dist/other-enquiry/index.html','utf8');
+assert.ok(other.includes('What do you need?') && !other.includes('id="enquiry-company"') && !other.includes('id="enquiry-type"') && !other.includes('id="enquiry-service"'));
 console.log('PASS Four matching linked cards, supplied illustration assets, compact four-plan-only page, preselected monthly enquiries, unified secondary CTA and homepage logo asset.');
