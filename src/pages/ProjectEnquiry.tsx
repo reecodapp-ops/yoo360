@@ -10,8 +10,9 @@ import { sendProjectEnquiry } from "@/lib/project-enquiry";
 const fieldStyle = "w-full rounded-2xl border border-[#131311]/20 bg-transparent px-5 py-3.5 text-base placeholder:text-[#131311]/35 focus:border-[#C79A00] focus:outline-none focus:ring-2 focus:ring-[#FFC700]/30";
 const labelStyle = "mb-2 block text-sm font-medium";
 
-export default function ProjectEnquiry({ search }: { search?: string } = {}) {
+export default function ProjectEnquiry({ search, other = false }: { search?: string; other?: boolean } = {}) {
   const params = new URLSearchParams(search ?? (typeof window === 'undefined' ? '' : window.location.search));
+  const otherEnquiry = other || params.get('type') === 'other';
   const services = { brand: 'Brand Strategy & Identity', partnerships: 'Marketing Partnerships', digital: 'Websites & Digital Products', video: 'Video & Motion Production', 'not-sure': 'Not sure yet' };
   const requestedService = params.get('service') || 'not-sure';
   const initialService = requestedService === 'campaigns' ? 'partnerships' : requestedService;
@@ -50,6 +51,8 @@ export default function ProjectEnquiry({ search }: { search?: string } = {}) {
     if (subscriptionPlan) {
       values.service = 'partnerships'; values.plan = subscriptionPlan.slug; values.projectType = 'monthly';
       values.message = subscriptionMessage(subscriptionPlan);
+    } else if (otherEnquiry) {
+      values.service = 'not-sure'; values.projectType = 'not-sure';
     }
     const fingerprint = JSON.stringify(values);
     if (request.current?.fingerprint !== fingerprint)
@@ -70,11 +73,11 @@ export default function ProjectEnquiry({ search }: { search?: string } = {}) {
       <main className="relative overflow-hidden px-5 pt-32 pb-20 md:px-10 md:pt-40">
         <div className="pointer-events-none absolute -top-24 -right-24 size-[420px] rounded-full bg-[#FFC700]/25 blur-3xl" />
         <div className="relative mx-auto max-w-3xl">
-          <a href={subscriptionPlan ? `/marketing-partnerships/${subscriptionPlan.slug}` : "/"} className="mb-10 inline-flex items-center gap-2 text-sm font-medium text-[#131311]/60 transition-colors hover:text-[#131311]"><ArrowLeft className="size-4" />{subscriptionPlan ? "Back to plan" : "Back to Yoo360"}</a>
+          <a href={subscriptionPlan ? `/marketing-partnerships/${subscriptionPlan.slug}` : otherEnquiry ? ORDERS_URL : "/"} className="mb-10 inline-flex items-center gap-2 text-sm font-medium text-[#131311]/60 transition-colors hover:text-[#131311]"><ArrowLeft className="size-4" />{subscriptionPlan ? "Back to plan" : otherEnquiry ? "Back to services" : "Back to Yoo360"}</a>
           <motion.div initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
-            <p className="mb-5 text-xs font-semibold tracking-[0.2em] uppercase text-[#131311]/50">Brand & marketing partnerships</p>
-            <h1 className="font-display text-5xl leading-[1.02] font-bold tracking-[-0.03em] md:text-7xl">{subscriptionPlan ? <>Request the <em className="font-serif-accent font-normal italic text-[#C79A00]">{subscriptionPlan.name} plan.</em></> : <>Discuss a <em className="font-serif-accent font-normal italic text-[#C79A00]">project.</em></>}</h1>
-            <p className="mt-6 max-w-lg text-base leading-relaxed text-[#131311]/65">{subscriptionPlan ? "Your plan and scope are already included. Add your contact details and send your request." : "Share your goals and what you need. We’ll review the scope and prepare a proposal."}</p>
+            <p className="mb-5 text-xs font-semibold tracking-[0.2em] uppercase text-[#131311]/50">{otherEnquiry ? "Other enquiries" : "Brand & marketing partnerships"}</p>
+            <h1 className="font-display text-5xl leading-[1.02] font-bold tracking-[-0.03em] md:text-7xl">{subscriptionPlan ? <>Request the <em className="font-serif-accent font-normal italic text-[#C79A00]">{subscriptionPlan.name} plan.</em></> : otherEnquiry ? <>Tell us what you <em className="font-serif-accent font-normal italic text-[#C79A00]">have in mind.</em></> : <>Discuss a <em className="font-serif-accent font-normal italic text-[#C79A00]">project.</em></>}</h1>
+            <p className="mt-6 max-w-lg text-base leading-relaxed text-[#131311]/65">{subscriptionPlan ? "Your plan and scope are already included. Add your contact details and send your request." : otherEnquiry ? "A project, collaboration or introduction. Share a few lines and we’ll get back to you." : "Share your goals and what you need. We’ll review the scope and prepare a proposal."}</p>
           </motion.div>
 
           {sent ? (
@@ -87,9 +90,10 @@ export default function ProjectEnquiry({ search }: { search?: string } = {}) {
           ) : (
             <form onSubmit={submit} className="mt-12 grid gap-6 border-t border-[#131311]/15 pt-9 sm:grid-cols-2">
               <div><label htmlFor="enquiry-name" className={labelStyle}>Name</label><input id="enquiry-name" name="name" autoComplete="name" required maxLength={120} className={fieldStyle} /></div>
-              <div><label htmlFor="enquiry-company" className={labelStyle}>Company <span className="text-[#131311]/45">(optional)</span></label><input id="enquiry-company" name="company" autoComplete="organization" maxLength={160} className={fieldStyle} /></div>
+              {!otherEnquiry && <div><label htmlFor="enquiry-company" className={labelStyle}>Company <span className="text-[#131311]/45">(optional)</span></label><input id="enquiry-company" name="company" autoComplete="organization" maxLength={160} className={fieldStyle} /></div>}
               <div><label htmlFor="enquiry-email" className={labelStyle}>Email</label><input id="enquiry-email" name="email" type="email" autoComplete="email" required maxLength={254} className={fieldStyle} /></div>
-              {!subscriptionPlan && <><div><label htmlFor="enquiry-type" className={labelStyle}>Project type</label><select id="enquiry-type" name="projectType" required value={projectType} onChange={event => setProjectType(event.target.value)} className={fieldStyle}><option value="" disabled>Select an option</option><option value="one-time">Single project</option><option value="monthly">Monthly support</option><option value="not-sure">Not sure yet</option></select></div>
+              {otherEnquiry && <div className="sm:col-span-2"><label htmlFor="other-message" className={labelStyle}>What do you need?</label><textarea id="other-message" name="message" required minLength={10} maxLength={3000} rows={5} placeholder="Tell us about your idea or how you'd like to connect." className={fieldStyle + " resize-y"} /></div>}
+              {!subscriptionPlan && !otherEnquiry && <><div><label htmlFor="enquiry-type" className={labelStyle}>Project type</label><select id="enquiry-type" name="projectType" required value={projectType} onChange={event => setProjectType(event.target.value)} className={fieldStyle}><option value="" disabled>Select an option</option><option value="one-time">Single project</option><option value="monthly">Monthly support</option><option value="not-sure">Not sure yet</option></select></div>
               <div><label htmlFor="enquiry-service" className={labelStyle}>Service</label><select id="enquiry-service" name="service" value={service} onChange={event => setService(event.target.value)} className={fieldStyle}>{Object.entries(services).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
               <div><label htmlFor="enquiry-deadline" className={labelStyle}>Preferred timing <span className="text-[#131311]/45">(optional)</span></label><input id="enquiry-deadline" name="deadline" maxLength={100} placeholder="Launch date or timeframe" className={fieldStyle} /></div>
               {projectType === 'monthly' && <div className="sm:col-span-2"><label htmlFor="enquiry-plan" className={labelStyle}>Partnership plan <span className="text-[#131311]/45">(optional)</span></label><select id="enquiry-plan" name="plan" value={plan} onChange={event => setPlan(event.target.value)} className={fieldStyle}><option value="">Help me choose</option>{partnershipPlans.map(item => <option value={item.slug} key={item.slug}>{item.name}</option>)}</select></div>}
@@ -101,7 +105,7 @@ export default function ProjectEnquiry({ search }: { search?: string } = {}) {
                 {availability === false && <p className="mb-5 text-sm leading-relaxed text-[#131311]/65">Enquiries are temporarily unavailable. Please try again later{contactEmail ? " or email us below." : "."}</p>}
                 {error && <p role="alert" className="mb-5 text-sm text-red-800">{error}</p>}
                 <div className="flex flex-wrap items-center gap-6">
-                  <button type="submit" disabled={busy || availability !== true} className="group inline-flex items-center gap-2 rounded-full bg-[#131311] px-7 py-3.5 text-sm font-semibold text-[#F6F4EE] transition-colors hover:bg-[#FFC700] hover:text-[#131311] disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Sending…" : subscriptionPlan ? "Send Subscription Request" : "Send project enquiry"}<Send className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" /></button>
+                  <button type="submit" disabled={busy || availability !== true} className="group inline-flex items-center gap-2 rounded-full bg-[#131311] px-7 py-3.5 text-sm font-semibold text-[#F6F4EE] transition-colors hover:bg-[#FFC700] hover:text-[#131311] disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Sending…" : subscriptionPlan ? "Send Subscription Request" : otherEnquiry ? "Send enquiry" : "Send project enquiry"}<Send className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" /></button>
                   {contactEmail && <a href={"mailto:" + contactEmail + (subscriptionPlan ? "?subject=" + encodeURIComponent(subscriptionPlan.name + " monthly partnership request") + "&body=" + encodeURIComponent(subscriptionMessage(subscriptionPlan)) : "")} className="text-sm font-medium underline decoration-[#FFC700] decoration-2 underline-offset-8">Email us instead</a>}
                 </div>
               </div>

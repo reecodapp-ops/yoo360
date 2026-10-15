@@ -49,14 +49,11 @@ export default function Nav({ projectPage = false }: { projectPage?: boolean }) 
         </ul>
 
         <div className="flex items-center gap-3">
-          <a href="/order-a-design" className="hidden text-sm font-medium text-[#131311]/70 transition-colors hover:text-[#131311] lg:inline-flex">
-            Build With Us
-          </a>
           <a
-            href="/discuss-a-project"
+            href="/order-a-design"
             className="group hidden items-center gap-1.5 rounded-full bg-[#131311] px-5 py-2.5 text-sm font-semibold text-[#F6F4EE] transition-colors hover:bg-[#FFC700] hover:text-[#131311] md:inline-flex"
           >
-            Discuss a project
+            Start a Project
             <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
           </a>
           <button
@@ -93,13 +90,12 @@ export default function Nav({ projectPage = false }: { projectPage?: boolean }) 
                 </li>
               ))}
               <li className="pt-2">
-                <a href="/order-a-design" onClick={() => setOpen(false)} className="mb-4 block px-3 py-3 font-display text-2xl font-semibold">Build With Us</a>
                 <a
-                  href="/discuss-a-project"
+                  href="/order-a-design"
                   onClick={() => setOpen(false)}
                   className="inline-flex items-center gap-2 rounded-full bg-[#FFC700] px-6 py-3 font-semibold"
                 >
-                  Discuss a project <ArrowUpRight className="size-4" />
+                  Start a Project <ArrowUpRight className="size-4" />
                 </a>
               </li>
             </ul>

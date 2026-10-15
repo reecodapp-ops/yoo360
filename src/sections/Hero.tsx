@@ -71,15 +71,15 @@ export default function Hero() {
           <motion.div variants={fadeUp} initial="hidden" animate="show" custom={4} className="max-w-md">
             <div className="flex flex-wrap items-center gap-4">
               <a
-                href="/discuss-a-project"
+                href="/order-a-design"
                 className="group inline-flex items-center gap-2 rounded-full bg-[#131311] px-7 py-3.5 text-sm font-semibold text-[#F6F4EE] transition-colors hover:bg-[#FFC700] hover:text-[#131311]"
               >
-                Discuss a project
+                Start a Project
                 <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
               </a>
               <a
                 href="#work"
-                className="group inline-flex items-center gap-2 rounded-full border border-[#131311]/20 px-7 py-3.5 text-sm font-semibold transition-colors hover:bg-[#FFC700] hover:border-[#FFC700]"
+                className="group inline-flex items-center gap-2 px-2 py-3.5 text-sm font-semibold underline decoration-[#C79A00] decoration-2 underline-offset-8 transition-colors hover:text-[#9B7600]"
               >
                 Explore our work
                 <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />

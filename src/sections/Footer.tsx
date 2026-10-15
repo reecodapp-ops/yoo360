@@ -22,22 +22,12 @@ export default function Footer({ subpage = false }: { subpage?: boolean }) {
         <div className="mt-12 flex flex-col justify-between gap-10 border-t border-[#F6F4EE]/12 pt-10 md:flex-row md:items-end">
           <div>
             <p className="mb-4 text-sm text-[#F6F4EE]/55">
-              Have a project in mind? Tell us what you need.
+              Choose a service and tell us what you need.
             </p>
-            <a href="/discuss-a-project" className="group inline-flex items-center gap-2 rounded-full bg-[#FFC700] px-6 py-3 text-sm font-bold text-[#131311] transition-transform hover:scale-105">
-              Discuss a project <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
+            <a href="/order-a-design" className="group inline-flex items-center gap-2 rounded-full bg-[#FFC700] px-6 py-3 text-sm font-bold text-[#131311] transition-transform hover:scale-105">
+              Start a Project <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
             </a>
           </div>
-
-          <a
-            href="/order-a-design"
-            className="group inline-flex items-center gap-2 self-start font-display text-lg font-semibold md:self-auto"
-          >
-            Build With Us
-            <span className="grid size-12 place-items-center rounded-full bg-[#FFC700] text-[#131311] transition-transform duration-300 group-hover:rotate-45">
-              <ArrowUpRight className="size-5" />
-            </span>
-          </a>
         </div>
 
         <div className="mt-16 flex flex-col items-start justify-between gap-6 border-t border-[#F6F4EE]/12 pt-8 md:flex-row md:items-center">

@@ -20,6 +20,6 @@ export function renderPage(path: string, search?: string) {
   const member = teamMembers.find(person => teamMemberPath(person) === path);
   const service = servicePages.find(item => servicePath(item) === path);
   const plan = partnershipPlans.find(item => planPath(item) === path);
-  const page = path === "/" ? <App /> : path === "/discuss-a-project" ? <ProjectEnquiry search={search} /> : path === "/about" ? <About /> : path === "/team" ? <Team /> : member ? <TeamProfile member={member} /> : path === "/marketing-partnerships" ? <Partnerships /> : plan ? <Partnerships plan={plan} /> : service ? <Service service={service} /> : <NotFound />;
+  const page = path === "/" ? <App /> : path === "/discuss-a-project" ? <ProjectEnquiry search={search} /> : path === "/other-enquiry" ? <ProjectEnquiry other /> : path === "/about" ? <About /> : path === "/team" ? <Team /> : member ? <TeamProfile member={member} /> : path === "/marketing-partnerships" ? <Partnerships /> : plan ? <Partnerships plan={plan} /> : service ? <Service service={service} /> : <NotFound />;
   return renderToStaticMarkup(<AnimatePresence initial={false}>{page}</AnimatePresence>);
 }

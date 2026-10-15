@@ -21,6 +21,12 @@ const pages = [
     type: 'ContactPage',
   },
   {
+    path: '/other-enquiry', file: 'dist/other-enquiry/index.html',
+    title: 'Tell Yoo360 What You Have in Mind | Yoo360',
+    description: 'Have a different project, collaboration or introduction in mind? Send Yoo360 a short message and we will get back to you.',
+    type: 'ContactPage',
+  },
+  {
     path: '/404.html', file: 'dist/404.html',
     title: 'Page not found | Yoo360',
     description: 'This page could not be found. Return to Yoo360 to explore our services and work.',

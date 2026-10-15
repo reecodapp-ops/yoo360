@@ -18,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <Routes>
         <Route path="/discuss-a-project" element={<ProjectEnquiry />} />
+        <Route path="/other-enquiry" element={<ProjectEnquiry other />} />
         <Route path="/marketing-partnerships" element={<Partnerships />} />
         {partnershipPlans.map(plan => <Route key={plan.slug} path={planPath(plan)} element={<Partnerships plan={plan} />} />)}
         {servicePages.map(service => <Route key={service.slug} path={servicePath(service)} element={<Service service={service} />} />)}

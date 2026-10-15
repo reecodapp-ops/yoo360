@@ -4,7 +4,7 @@ const origin='https://www.theyoo360.com';
 const sitemap=await readFile('dist/sitemap.xml','utf8');
 const routes=[...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(x=>x[1].slice(origin.length));
 assert.equal(new Set(routes).size,routes.length);
-assert.equal(routes.length,17);
+assert.equal(routes.length,18);
 assert.ok(!routes.some(p=>/campaigns-market|checkout|payment-status|project-brief|admin/.test(p)));
 const titles=new Set(),descriptions=new Set(),links=new Map();
 const decode=s=>s.replaceAll('&amp;','&').replaceAll('&#x27;',"'");
@@ -32,4 +32,4 @@ const robots=await readFile('dist/robots.txt','utf8');for(const bot of ['Googleb
 const home=await readFile('dist/index.html','utf8');assert.ok(!home.split('<body>')[1].includes('$2,000'));
 const about=await readFile('dist/about/index.html','utf8');assert.ok(about.includes('ContactPoint'));assert.ok(about.includes('Berton Ruposo Mwisha'));
 const config=JSON.parse(await readFile('vercel.json','utf8'));assert.ok(config.redirects.some(x=>x.source==='/campaigns-market-launches'&&x.destination==='/marketing-partnerships'&&x.permanent));
-console.log('PASS 17 public static pages: unique titles/descriptions <160, one H1, canonical tags, local assets, JSON-LD associations, sitemap exclusions, four crawler rules and all public pages within three clicks.');
+console.log('PASS 18 public static pages: unique titles/descriptions <160, one H1, canonical tags, local assets, JSON-LD associations, sitemap exclusions, four crawler rules and all public pages within three clicks.');
