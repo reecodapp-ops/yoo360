@@ -31,6 +31,7 @@ const routes = [
   { path: '/order/graphics', screen: 'graphics', title: 'Marketing & Print Design | Yoo360', description: 'Order marketing and print designs from $40 per project. Name each design and choose the files and delivery options you need.' },
   { path: '/checkout', screen: 'checkout', title: 'Secure Checkout | Yoo360', private: true },
   { path: '/payment-status', screen: 'payment', title: 'Payment Status | Yoo360', private: true },
+  { path: '/request-received', screen: 'received', title: 'Request Received | Yoo360', private: true },
   { path: '/project-brief', screen: 'brief', title: 'Project Brief | Yoo360', private: true },
   { path: '/order', screen: 'status', title: 'Your Design Order | Yoo360', private: true },
 ];

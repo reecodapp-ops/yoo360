@@ -15,6 +15,10 @@
       "destination": "/order-a-design/payment-status"
     },
     {
+      "source": "/order-a-design/request-received/:id",
+      "destination": "/order-a-design/request-received"
+    },
+    {
       "source": "/order-a-design/project-brief/:id",
       "destination": "/order-a-design/project-brief"
     },
@@ -52,7 +56,7 @@
       ]
     },
     {
-      "source": "/order-a-design/:path(checkout|payment-status|project-brief|order)",
+      "source": "/order-a-design/:path(checkout|payment-status|request-received|project-brief|order)",
       "headers": [
         {
           "key": "X-Robots-Tag",
