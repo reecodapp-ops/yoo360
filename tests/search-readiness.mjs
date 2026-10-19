@@ -55,7 +55,8 @@ for (const [file, route, heading] of cases) {
 }
 const home = await readFile('dist/index.html', 'utf8');
 assert.ok(home.includes('what <em') && home.includes('We build'), 'The homepage headline keeps both complete thoughts');
-assert.ok(home.includes('East Africa'));
+assert.ok(home.includes('<title>Yoo360 | Brand &amp; Digital Agency | Turn Attention Into Sales</title>'));
+assert.ok(home.includes('We shape your offer, strengthen your brand and create campaigns and digital tools that reach customers.'));
 for (const service of ['Brand Strategy &amp; Identity', 'Video &amp; Motion Production', 'Marketing Partnerships', 'Websites &amp; Digital Products']) {
   assert.ok(home.toLowerCase().split('<body>')[1].includes(service.toLowerCase()), `${service} is present in page content`);
 }
