@@ -33,6 +33,7 @@ export type Cart = z.infer<typeof cartSchema>;
 export type Artwork = z.infer<typeof artworkSchema>;
 export type Customer = {
     name: string;
+    email?: string;
     business: string;
     individual: boolean;
     country: string;
