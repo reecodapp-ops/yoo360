@@ -39,6 +39,8 @@ export type Customer = {
     country: string;
     provider: string;
     phone: string;
+    priceDiscussion?: boolean;
+    budget?: string;
 };
 // Keep legacy identity fields for existing orders; checkout only needs payment details.
 export const customerSchema = z.object({ name: z.string().trim().max(100).default(''), business: z.string().trim().max(150).default(''), individual: z.boolean().default(false), country: z.enum(['RWA', 'UGA', 'COD', 'TZA']), provider: z.string().max(100), phone: z.string().min(9).max(30) }).superRefine((c, ctx) => { const country = COUNTRIES.find(x => x.id === c.country)!; if (!country.pattern.test(normalizePhone(c.phone, c.country)))

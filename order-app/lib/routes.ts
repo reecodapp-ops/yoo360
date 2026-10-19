@@ -14,6 +14,6 @@ export function orderScreen(path: string): { screen: string; id?: string } | nul
   if (path !== ORDER_BASE && !path.startsWith(ORDER_BASE + '/')) return null;
   const screens: Record<string, string> = { '': 'home', '/order/logo': 'logo', '/order/graphics': 'graphics', '/checkout': 'checkout' };
   if (screens[relative]) return { screen: screens[relative] };
-  const match = relative.match(/^\/(payment-status|project-brief|order)\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/);
-  return match ? { screen: { 'payment-status': 'payment', 'project-brief': 'brief', 'order': 'status' }[match[1]]!, id: match[2] } : null;
+  const match = relative.match(/^\/(payment-status|request-received|project-brief|order)\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/);
+  return match ? { screen: { 'payment-status': 'payment', 'request-received': 'received', 'project-brief': 'brief', 'order': 'status' }[match[1]]!, id: match[2] } : null;
 }

@@ -6,7 +6,7 @@ const origin = 'https://www.theyoo360.com';
 const id = '634a4607-209d-4f44-8c98-e80e6cdd537c';
 for (const [path, screen] of [
   ['', 'home'], ['/order/logo', 'logo'], ['/order/graphics', 'graphics'], ['/checkout', 'checkout'],
-  [`/payment-status/${id}`, 'payment'], [`/project-brief/${id}`, 'brief'], [`/order/${id}`, 'status'],
+  [`/payment-status/${id}`, 'payment'], [`/request-received/${id}`, 'received'], [`/project-brief/${id}`, 'brief'], [`/order/${id}`, 'status'],
 ]) {
   const route = orderRoute(path || '/');
   assert.equal(orderScreen(route)?.screen, screen);
@@ -18,7 +18,7 @@ for (const path of ['/team', '/order-a-design-elsewhere', '/order-a-design/admin
 assert.equal(orderApi(`orders/${id}/brief`), `/api/design-orders/orders/${id}/brief`);
 
 const publicPages = ['', '/order/logo', '/order/graphics'];
-for (const path of [...publicPages, '/checkout', '/payment-status', '/project-brief', '/order']) {
+for (const path of [...publicPages, '/checkout', '/payment-status', '/request-received', '/project-brief', '/order']) {
   const html = await readFile(`dist/order-a-design${path}/index.html`, 'utf8');
   assert.ok(html.includes('name="referrer" content="no-referrer"'));
   assert.ok(html.includes('sizes="96x96"'));
