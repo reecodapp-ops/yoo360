@@ -67,6 +67,16 @@
   ],
   "redirects": [
     {
+      "source": "/team-workspace/:order([0-9a-f-]{36})",
+      "destination": "https://team.theyoo360.com/admin?order=:order",
+      "permanent": false
+    },
+    {
+      "source": "/team-workspace",
+      "destination": "https://team.theyoo360.com/admin",
+      "permanent": false
+    },
+    {
       "source": "/campaigns-market-launches",
       "destination": "/marketing-partnerships",
       "permanent": true
