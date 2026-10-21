@@ -172,3 +172,5 @@ html.lenis{scroll-behavior:auto!important}
   .brief-actions>small{order:2;text-align:center}
 }
 @media(max-width:350px){.shell{padding-inline:22px}.panel,.offer,.checkout-panel,.summary{padding:18px}}
+
+.order-revision{display:grid;gap:16px}.order-revision>.stack{gap:14px}.order-revision .offer,.order-revision .artwork{border-color:var(--border);box-shadow:none}.order-revision .section-label{margin-top:14px}.order-revision .production{margin-top:8px}.revision-totals{border-top:1px solid var(--border);padding-top:18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.revision-totals span{display:grid;gap:5px;color:var(--muted-foreground);font-size:.85rem}.revision-totals b{color:var(--foreground);font-size:1.1rem}.order-revision>.primary{justify-self:start}@media(max-width:760px){.order-revision>.primary{width:100%}}
