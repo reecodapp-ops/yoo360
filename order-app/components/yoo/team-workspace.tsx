@@ -100,6 +100,7 @@ export function TeamWorkspace() {
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<'list' | 'project' | 'payment' | 'message' | 'manage', string>>>({});
   const [notice, setNotice] = useState('');
+  const [sent, setSent] = useState<{ orderId: string; reference: string; recipient: string; subject: string } | null>(null);
   const [clientLink, setClientLink] = useState('');
   const [linkError, setLinkError] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -119,6 +120,7 @@ export function TeamWorkspace() {
   }
   useEffect(() => { void loadSession(); }, []);
   async function openOrder(id: string) {
+    setSent(null);
     const order: Order = await api('orders/' + id);
     setSelected(order); setDraft(draftFor(order)); setClientLink(''); setLinkError('');
     api('orders/' + id + '/client-link').then(result => setClientLink(result.link)).catch(e => setLinkError((e as Error).message)); setPaymentPurpose(order.paid >= order.due ? 'balance' : 'initial');
@@ -128,7 +130,7 @@ export function TeamWorkspace() {
     history.replaceState(null, '', '/team-workspace/' + id);
   }
   async function copyClientLink() { if (!clientLink) return; try { await navigator.clipboard.writeText(clientLink); setNotice('Private client project link copied. Send it only to this client.'); } catch { setLinkError('Could not copy automatically. Select the link below and copy it.'); } }
-  function back() { setSelected(null); setDraft(null); setPreview(null); history.replaceState(null, '', '/team-workspace'); void loadOrders(); }
+  function back() { setSent(null); setSelected(null); setDraft(null); setPreview(null); history.replaceState(null, '', '/team-workspace'); void loadOrders(); }
   async function run(area: 'list' | 'project' | 'payment' | 'message' | 'manage', action: () => Promise<void>) { setBusy(true); setErrors(current => ({ ...current, [area]: '' })); setNotice(''); try { await action(); } catch (e) { const message = (e as Error).message; const target = area === 'payment' && /declin|brief|work starts|project stage/i.test(message) ? 'project' : area; setErrors(current => ({ ...current, [target]: message })); } finally { setBusy(false); } }
   async function quickStage(order: Order, value: string) { await run('list', async () => { await api('orders/' + order.id, 'PATCH', { status: value }); await loadOrders(); setNotice('Stage saved. No email was sent.'); }); }
   async function save() { if (!selected || !draft) return; await run('payment', async () => {
@@ -154,8 +156,13 @@ export function TeamWorkspace() {
   }, [selected?.id, draft, moment]);
   async function sendEmail() { if (!selected || !draft || !sendKey || !preview || draftState !== 'ready') return; await run('message', async () => {
     if (dirty) await api('orders/' + selected.id + '/manage', 'PATCH', draft);
-    await api('orders/' + selected.id + '/client-update', 'POST', { moment, preview: false, requestKey: sendKey, edited: preview });
-    setPreview(null); setSendKey(''); await openOrder(selected.id); setNotice(`Email sent to ${selected.customer.email}.`);
+    const recipient = draft.customer.email;
+    const subject = preview.subject;
+    const result = await api('orders/' + selected.id + '/client-update', 'POST', { moment, preview: false, requestKey: sendKey, edited: preview });
+    if (result.delivery !== 'email') throw new Error('The email was not accepted. Check the order before trying again.');
+    setPreview(null); setSendKey(''); setSelected(null); setDraft(null);
+    history.replaceState(null, '', '/team-workspace'); await loadOrders();
+    setSent({ orderId: selected.id, reference: selected.reference, recipient, subject });
   }); }
   async function archiveOrder(value: boolean) { if (!selected) return; await run('manage', async () => {
     await api('orders/' + selected.id + '/archive', 'PATCH', { archived: value }); await openOrder(selected.id); await loadOrders(); setNotice(value ? 'Order archived.' : 'Order restored.');
@@ -176,7 +183,7 @@ export function TeamWorkspace() {
   if (auth === 'signed-out') return <GoogleSignIn clientId={clientId} onSuccess={() => void loadSession()}/>;
   return <div className="team-shell">
     <header className="team-header"><a href="/"><img src="/brand/yoo360-primary-white.webp" alt="Yoo360 home"/></a><button onClick={signOut} className="team-quiet">Sign out</button></header>
-    <main className="team-main"><div className="team-title"><div><span className="team-kicker">YOO360 TEAM</span><h1>Order workspace</h1></div>{selected && <button onClick={back} className="team-quiet">← All orders</button>}</div>
+    <main className="team-main">{sent ? <section className="team-sent" role="status" aria-live="polite"><div className="team-sent-mark" aria-hidden="true">✓</div><span className="team-kicker">MESSAGE SENT</span><h1>That’s done.</h1><p>Your email to <strong>{sent.recipient}</strong> was accepted for sending.</p><div className="team-sent-detail"><small>{sent.reference}</small><strong>{sent.subject}</strong><span>A copy is going to yoo360agency@gmail.com. You can also find the send record in this order’s timeline.</span></div><div className="team-actions"><button className="team-primary" onClick={() => void openOrder(sent.orderId)}>View this order</button><button className="team-quiet" onClick={() => setSent(null)}>All orders</button></div></section> : <><div className="team-title"><div><span className="team-kicker">YOO360 TEAM</span><h1>Order workspace</h1></div>{selected && <button onClick={back} className="team-quiet">← All orders</button>}</div>
       {notice && <div className="team-notice team-toast" role="status"><span>✓ {notice}</span><button type="button" aria-label="Dismiss confirmation" onClick={() => setNotice('')}>×</button></div>}
       {!selected ? <>
         <div className="team-toolbar"><input aria-label="Search orders" placeholder="Search by client or project number" value={search} onChange={e => setSearch(e.target.value)}/><button className="team-quiet" onClick={() => { setSelectedIds([]); setArchived(!archived); }}>{archived ? 'Active orders' : 'Archived orders'}</button><button className="team-quiet" onClick={() => void loadOrders()}>Refresh</button></div>
@@ -230,7 +237,7 @@ export function TeamWorkspace() {
           </section>
           <section className="team-card team-manage"><h2>Manage order</h2><div className="team-actions"><button className="team-quiet" disabled={busy} onClick={() => void archiveOrder(!selected.archivedAt)}>{selected.archivedAt ? 'Restore order' : 'Archive order'}</button>{selected.paid === 0 && <button className="team-trash" type="button" title="Delete this unpaid order" aria-label="Delete this unpaid order" disabled={busy} onClick={() => void deleteOrder()}><Trash2 size={18}/></button>}</div>{errors.manage && <p className="team-error" role="alert">{errors.manage}</p>}</section>
         </div>
-      </div>}
+      </div>}</>}
     </main>
   </div>;
 }
