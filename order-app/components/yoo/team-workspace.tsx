@@ -100,6 +100,8 @@ export function TeamWorkspace() {
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<'list' | 'project' | 'payment' | 'message' | 'manage', string>>>({});
   const [notice, setNotice] = useState('');
+  const [clientLink, setClientLink] = useState('');
+  const [linkError, setLinkError] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [moment, setMoment] = useState<Moment>('accepted');
   const [preview, setPreview] = useState<{ subject: string; body: string } | null>(null);
@@ -118,12 +120,14 @@ export function TeamWorkspace() {
   useEffect(() => { void loadSession(); }, []);
   async function openOrder(id: string) {
     const order: Order = await api('orders/' + id);
-    setSelected(order); setDraft(draftFor(order)); setPaymentPurpose(order.paid >= order.due ? 'balance' : 'initial');
+    setSelected(order); setDraft(draftFor(order)); setClientLink(''); setLinkError('');
+    api('orders/' + id + '/client-link').then(result => setClientLink(result.link)).catch(e => setLinkError((e as Error).message)); setPaymentPurpose(order.paid >= order.due ? 'balance' : 'initial');
     const acceptedEmailSent = order.activity?.some(a => a.message === 'Client emailed: accepted');
     setMoment(order.requestStatus === 'Declined' ? 'declined' : order.requestStatus === 'Responded' ? 'details' : order.requestStatus === 'Accepted' && acceptedEmailSent && order.paid > 0 ? 'payment' : 'accepted');
     setPreview(null); setSendKey(''); setErrors({});
     history.replaceState(null, '', '/team-workspace/' + id);
   }
+  async function copyClientLink() { if (!clientLink) return; try { await navigator.clipboard.writeText(clientLink); setNotice('Private client project link copied. Send it only to this client.'); } catch { setLinkError('Could not copy automatically. Select the link below and copy it.'); } }
   function back() { setSelected(null); setDraft(null); setPreview(null); history.replaceState(null, '', '/team-workspace'); void loadOrders(); }
   async function run(area: 'list' | 'project' | 'payment' | 'message' | 'manage', action: () => Promise<void>) { setBusy(true); setErrors(current => ({ ...current, [area]: '' })); setNotice(''); try { await action(); } catch (e) { const message = (e as Error).message; const target = area === 'payment' && /declin|brief|work starts|project stage/i.test(message) ? 'project' : area; setErrors(current => ({ ...current, [target]: message })); } finally { setBusy(false); } }
   async function quickStage(order: Order, value: string) { await run('list', async () => { await api('orders/' + order.id, 'PATCH', { status: value }); await loadOrders(); setNotice('Stage saved. No email was sent.'); }); }
@@ -191,7 +195,7 @@ export function TeamWorkspace() {
         </div>
       </> : draft && <div className="team-detail">
         <section className="team-card team-summary"><div className="team-kicker">{selected.reference}{selected.test ? ' · TEST' : ''}</div><h2>{selected.customer.name || selected.customer.business || 'Design project'}</h2><p>{selected.customer.email}{selected.customer.phone ? ` · ${selected.customer.phone}` : ''}</p>
-          <div className="team-metrics"><div><small>Project total</small><strong>{money(selected.total)}</strong></div><div><small>Received</small><strong>{money(selected.paid)}</strong></div><div><small>Remaining</small><strong>{money(selected.total - selected.paid)}</strong></div></div>
+          <div className="team-client-link"><h3>Client project link</h3><p>Send this private link to the client to view or edit their request.</p><button className="team-quiet" type="button" disabled={!clientLink} onClick={() => void copyClientLink()}>Copy client link</button>{clientLink && <input aria-label="Private client project link" readOnly value={clientLink} onFocus={e => e.currentTarget.select()}/ >}{linkError && <p className="team-error" role="alert">{linkError}</p>}</div><div className="team-metrics"><div><small>Project total</small><strong>{money(selected.total)}</strong></div><div><small>Received</small><strong>{money(selected.paid)}</strong></div><div><small>Remaining</small><strong>{money(selected.total - selected.paid)}</strong></div></div>
           <details><summary>What the client ordered</summary>{orderLines(selected.cart).map((line, i) => <p key={i}>{line.name} · {money(line.cents)}</p>)}</details>
           <details><summary>Client brief · {selected.briefStatus}</summary>{Object.entries(selected.brief).map(([key, answers]) => <div key={key}><h3>{key === 'logo' ? 'Logo' : selected.cart.artworks.find(a => a.id === key)?.name || 'Design'}</h3>{Object.entries(answers).map(([question, answer]) => <p key={question}><b>{question.replace(/([A-Z])/g, ' $1')}:</b> {answer}</p>)}</div>)}</details>
           <section className="team-timeline" aria-label="Project timeline"><h3>Project timeline</h3><ol>{[...selected.activity].reverse().map(a => <li key={a.id}><time dateTime={a.created_at}>{new Date(a.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time><span>{activityLabel(a.message)}</span></li>)}</ol>{selected.payments.length > 0 && <details><summary>Payment history</summary>{selected.payments.map(p => <p key={p.id}>{p.amount} {p.currency} · {p.status} · {new Date(p.created_at).toLocaleDateString()}</p>)}</details>}</section>
@@ -220,7 +224,7 @@ export function TeamWorkspace() {
           <section className="team-card team-email"><span className="team-section-label">05 / CLIENT MESSAGE</span><h2>What the client will receive</h2><p>This draft updates as you change the project. You can edit it before sending.</p><label>What’s the news?<select value={moment} onChange={e => setMoment(e.target.value as Moment)}>{moments.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
             {draftState === 'updating' && <p role="status">Updating the email draft…</p>}
             {draftState === 'error' && <p className="team-draft-error" role="status">{draftError}</p>}
-            {preview && <div className="team-preview"><label>Email subject<input aria-label="Email subject" value={preview.subject} maxLength={150} onChange={e => setPreview({ ...preview, subject: e.target.value })}/></label><label>Email message<textarea aria-label="Email message" rows={12} maxLength={4000} value={preview.body} onChange={e => setPreview({ ...preview, body: e.target.value })}/></label><small>The private project link and reference are added automatically.</small>{moment === 'details' && preview && needsQuestion(preview.body) && <p className="team-draft-error" role="alert">Replace the bracketed instruction with the exact question you want to ask this client.</p>}</div>}
+            {preview && <div className="team-preview"><label>Email subject<input aria-label="Email subject" value={preview.subject} maxLength={150} onChange={e => setPreview({ ...preview, subject: e.target.value })}/></label><label>Email message<textarea aria-label="Email message" rows={12} maxLength={4000} value={preview.body} onChange={e => setPreview({ ...preview, body: e.target.value })}/></label><small>The private project link appears in the draft when requesting details, and every email includes a project button.</small>{moment === 'details' && preview && needsQuestion(preview.body) && <p className="team-draft-error" role="alert">Replace the bracketed instruction with the exact question you want to ask this client.</p>}</div>}
             <div className="team-actions"><button className="team-primary" disabled={busy || !preview || draftState !== 'ready' || preview.subject.trim().length < 3 || preview.body.trim().length < 10 || (moment === 'details' && needsQuestion(preview.body))} onClick={() => void sendEmail()}>Confirm and send this email</button></div><small>We save your changes first. Nothing is emailed until you confirm.</small>
             {errors.message && <p className="team-error" role="alert">{errors.message}</p>}
           </section>
