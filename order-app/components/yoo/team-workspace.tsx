@@ -115,9 +115,9 @@ export function TeamWorkspace() {
     history.replaceState(null, '', '/team-workspace/' + id);
   }
   function back() { setSelected(null); setDraft(null); setPreview(null); history.replaceState(null, '', '/team-workspace'); void loadOrders(); }
-  async function run(area: 'list' | 'project' | 'payment' | 'message' | 'manage', action: () => Promise<void>) { setBusy(true); setErrors(current => ({ ...current, [area]: '' })); setNotice(''); try { await action(); } catch (e) { setErrors(current => ({ ...current, [area]: (e as Error).message })); } finally { setBusy(false); } }
+  async function run(area: 'list' | 'project' | 'payment' | 'message' | 'manage', action: () => Promise<void>) { setBusy(true); setErrors(current => ({ ...current, [area]: '' })); setNotice(''); try { await action(); } catch (e) { const message = (e as Error).message; const target = area === 'payment' && /declin|brief|work starts|project stage/i.test(message) ? 'project' : area; setErrors(current => ({ ...current, [target]: message })); } finally { setBusy(false); } }
   async function quickStage(order: Order, value: string) { await run('list', async () => { await api('orders/' + order.id, 'PATCH', { status: value }); await loadOrders(); setNotice('Stage saved. No email was sent.'); }); }
-  async function save() { if (!selected || !draft) return; await run('project', async () => {
+  async function save() { if (!selected || !draft) return; await run('payment', async () => {
     await api('orders/' + selected.id + '/manage', 'PATCH', draft);
     await openOrder(selected.id); await loadOrders(); setNotice('Saved. No email was sent.');
   }); }
