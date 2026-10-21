@@ -53,7 +53,7 @@ function activityLabel(message: string) {
   if (message.startsWith('Client emailed:')) return 'Client email sent: ' + message.split(':').at(-1)?.trim();
   return message;
 }
-const needsQuestion = (body: string) => body.includes('[Write the exact question for this client here.');
+const needsQuestion = (body: string) => body.includes('[Write your specific question for this client here.');
 function paymentLabel(order: Order) { return order.paid === 0 ? 'Unpaid' : order.paid >= order.total ? 'Paid in full' : 'Deposit received'; }
 
 function GoogleSignIn({ clientId, onSuccess }: { clientId: string; onSuccess: () => void }) {
@@ -224,7 +224,7 @@ export function TeamWorkspace() {
           <section className="team-card team-email"><span className="team-section-label">05 / CLIENT MESSAGE</span><h2>What the client will receive</h2><p>This draft updates as you change the project. You can edit it before sending.</p><label>What’s the news?<select value={moment} onChange={e => setMoment(e.target.value as Moment)}>{moments.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
             {draftState === 'updating' && <p role="status">Updating the email draft…</p>}
             {draftState === 'error' && <p className="team-draft-error" role="status">{draftError}</p>}
-            {preview && <div className="team-preview"><label>Email subject<input aria-label="Email subject" value={preview.subject} maxLength={150} onChange={e => setPreview({ ...preview, subject: e.target.value })}/></label><label>Email message<textarea aria-label="Email message" rows={12} maxLength={4000} value={preview.body} onChange={e => setPreview({ ...preview, body: e.target.value })}/></label><small>The private project link appears in the draft when requesting details, and every email includes a project button.</small>{moment === 'details' && preview && needsQuestion(preview.body) && <p className="team-draft-error" role="alert">Replace the bracketed instruction with the exact question you want to ask this client.</p>}</div>}
+            {preview && <div className="team-preview"><label>Email subject<input aria-label="Email subject" value={preview.subject} maxLength={150} onChange={e => setPreview({ ...preview, subject: e.target.value })}/></label><label>Email message<textarea aria-label="Email message" rows={12} maxLength={4000} value={preview.body} onChange={e => setPreview({ ...preview, body: e.target.value })}/></label><small>Every email includes a View your project button. The private link is shown above if you need to mention it in your message.</small>{moment === 'details' && preview && needsQuestion(preview.body) && <p className="team-draft-error" role="alert">Replace the bracketed instruction with the exact question you want to ask this client.</p>}</div>}
             <div className="team-actions"><button className="team-primary" disabled={busy || !preview || draftState !== 'ready' || preview.subject.trim().length < 3 || preview.body.trim().length < 10 || (moment === 'details' && needsQuestion(preview.body))} onClick={() => void sendEmail()}>Confirm and send this email</button></div><small>We save your changes first. Nothing is emailed until you confirm.</small>
             {errors.message && <p className="team-error" role="alert">{errors.message}</p>}
           </section>
