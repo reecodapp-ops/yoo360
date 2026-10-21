@@ -11,6 +11,10 @@
       "destination": "https://yoo360-studio-orders.berton-thedezi.chatgpt.site/api/:path*"
     },
     {
+      "source": "/p/:code([A-Za-z0-9_-]{16})",
+      "destination": "https://yoo360-studio-orders.berton-thedezi.chatgpt.site/api/short-link/:code"
+    },
+    {
       "source": "/p/:code([A-Za-z0-9_-]{47})",
       "destination": "https://yoo360-studio-orders.berton-thedezi.chatgpt.site/api/short-link/:code"
     },
