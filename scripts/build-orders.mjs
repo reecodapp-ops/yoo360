@@ -20,6 +20,9 @@ const common = {
 
 await build({ ...common, build: { outDir: path.join(root, 'dist/order-a-design'), emptyOutDir: true } });
 const template = await readFile('dist/order-a-design/index.html', 'utf8');
+const workspaceHtml = template.replace('<!-- order-metadata -->', '<title>Yoo360 Team Workspace</title><meta name="robots" content="noindex, nofollow" />').replace('<div id="root"></div>', '<div id="root"></div>');
+await mkdir(path.join(root, 'dist/team-workspace'), { recursive: true });
+await writeFile(path.join(root, 'dist/team-workspace/index.html'), workspaceHtml);
 await build({ ...common, ssr: { noExternal: true }, build: {
   ssr: path.join(orderRoot, 'prerender.tsx'), outDir: path.join(root, 'dist-ssr/orders'), emptyOutDir: true,
   rollupOptions: { output: { entryFileNames: 'prerender.mjs' } },
