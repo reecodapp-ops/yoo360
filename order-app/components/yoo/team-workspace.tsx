@@ -4,7 +4,7 @@ import { money, orderLines, type Cart } from '@/lib/catalog';
 import './team-workspace.css';
 
 type Decision = 'New' | 'Responded' | 'Accepted' | 'Declined';
-type Moment = 'accepted' | 'declined' | 'payment' | 'review' | 'delivered';
+type Moment = 'details' | 'accepted' | 'declined' | 'payment' | 'review' | 'delivered';
 type Customer = { name: string; email: string; phone: string; business: string; country?: string; budget?: string; priceDiscussion?: boolean };
 type Order = {
   id: string; reference: string; cart: Cart; customer: Customer; total: number; due: number; paid: number; share: number;
@@ -21,6 +21,7 @@ const stages = [
   ['Awaiting client feedback', 'Ready for review'], ['Completed', 'Delivered'],
 ] as const;
 const moments: { value: Moment; label: string }[] = [
+  { value: 'details', label: 'Ask for one more detail' },
   { value: 'accepted', label: 'Accept project and share payment details' },
   { value: 'declined', label: 'Decline request' },
   { value: 'payment', label: 'Confirm payment and progress' },
@@ -105,7 +106,7 @@ export function TeamWorkspace() {
     const order: Order = await api('orders/' + id);
     setSelected(order); setDraft(draftFor(order)); setPaymentPurpose(order.paid >= order.due ? 'balance' : 'initial');
     const acceptedEmailSent = order.activity?.some(a => a.message === 'Client emailed: accepted');
-    setMoment(order.requestStatus === 'Declined' ? 'declined' : order.requestStatus === 'Accepted' && acceptedEmailSent && order.paid > 0 ? 'payment' : 'accepted');
+    setMoment(order.requestStatus === 'Declined' ? 'declined' : order.requestStatus === 'Responded' ? 'details' : order.requestStatus === 'Accepted' && acceptedEmailSent && order.paid > 0 ? 'payment' : 'accepted');
     setPreview(null); setSendKey(''); setDeleteInput(''); setError('');
     history.replaceState(null, '', '/team-workspace/' + id);
   }
@@ -165,7 +166,7 @@ export function TeamWorkspace() {
         <div className="team-stack">
           <section className="team-card"><h2>Project details</h2><p>Save changes here. The client won’t be emailed until you review and send an update.</p>
             <div className="team-grid"><label>Name<input value={draft.customer.name} onChange={e => setDraft({ ...draft, customer: { ...draft.customer, name: e.target.value } })}/></label><label>Email<input type="email" value={draft.customer.email} onChange={e => setDraft({ ...draft, customer: { ...draft.customer, email: e.target.value } })}/></label><label>Phone<input value={draft.customer.phone} onChange={e => setDraft({ ...draft, customer: { ...draft.customer, phone: e.target.value } })}/></label><label>Business<input value={draft.customer.business} onChange={e => setDraft({ ...draft, customer: { ...draft.customer, business: e.target.value } })}/></label></div>
-            <div className="team-grid"><label>Request decision<select value={draft.requestStatus} onChange={e => setDraft({ ...draft, requestStatus: e.target.value as Decision })}>{(['New', 'Responded', 'Accepted', 'Declined'] as Decision[]).map(s => <option key={s}>{s}</option>)}</select></label><label>Work stage<select value={draft.projectStatus} onChange={e => setDraft({ ...draft, projectStatus: e.target.value })}>{['Awaiting payment', 'Awaiting project brief', ...stages.map(s => s[0]), 'Awaiting final balance'].map(s => <option key={s}>{s}</option>)}</select></label></div>
+            <div className="team-grid"><label>Request decision<select value={draft.requestStatus} onChange={e => setDraft({ ...draft, requestStatus: e.target.value as Decision })}>{(['New', 'Responded', 'Accepted', 'Declined'] as Decision[]).map(s => <option value={s} key={s}>{s === 'Responded' ? 'Need details' : s}</option>)}</select></label><label>Work stage<select value={draft.projectStatus} onChange={e => setDraft({ ...draft, projectStatus: e.target.value })}>{!stages.some(s => s[0] === draft.projectStatus) && <option value={draft.projectStatus}>{draft.projectStatus === 'Awaiting final balance' ? 'Ready, balance due' : 'Not started'}</option>}{stages.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label></div>
             <label>Project price in USD<input type="number" min="1" step="0.01" value={(draft.totalCents / 100).toFixed(2)} onChange={e => setDraft({ ...draft, totalCents: Math.round(Number(e.target.value) * 100) })} disabled={selected.paid > 0 || selected.test || selected.paymentMode !== 'manual'}/></label>
             <label>Payment method and verified account details<textarea rows={3} value={draft.paymentInstructions} onChange={e => setDraft({ ...draft, paymentInstructions: e.target.value })} placeholder="For example: Send via Mobile Money to…"/></label>
             <label>Note to client or reason if declined<textarea rows={2} value={draft.requestNote} onChange={e => setDraft({ ...draft, requestNote: e.target.value })}/></label>
