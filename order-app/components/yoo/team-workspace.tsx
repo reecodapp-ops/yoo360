@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { orderApi } from '@/lib/routes';
 import { money, orderLines, type Cart } from '@/lib/catalog';
+import { Trash2 } from 'lucide-react';
 import './team-workspace.css';
 
 type Decision = 'New' | 'Responded' | 'Accepted' | 'Declined';
@@ -87,8 +88,9 @@ export function TeamWorkspace() {
   const [search, setSearch] = useState('');
   const [archived, setArchived] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Partial<Record<'list' | 'project' | 'payment' | 'message' | 'manage', string>>>({});
   const [notice, setNotice] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [moment, setMoment] = useState<Moment>('accepted');
   const [preview, setPreview] = useState<{ subject: string; body: string } | null>(null);
   const [draftState, setDraftState] = useState<'idle' | 'updating' | 'ready' | 'error'>('idle');
@@ -97,12 +99,11 @@ export function TeamWorkspace() {
   const [sendKey, setSendKey] = useState('');
   const [paymentRef, setPaymentRef] = useState('');
   const [paymentPurpose, setPaymentPurpose] = useState<'initial' | 'full' | 'balance'>('initial');
-  const [deleteInput, setDeleteInput] = useState('');
   async function loadOrders() { const result = await api('orders'); setOrders(result.orders); }
   async function loadSession() {
     try { const result = await api('session'); setClientId(result.clientId || ''); setAuth(result.signedIn ? 'signed-in' : 'signed-out');
       if (result.signedIn) { await loadOrders(); const id = location.pathname.split('/')[2]; if (/^[0-9a-f-]{36}$/.test(id || '')) await openOrder(id); }
-    } catch (e) { setAuth('signed-out'); setError((e as Error).message); }
+    } catch (e) { setAuth('signed-out'); setErrors({ list: (e as Error).message }); }
   }
   useEffect(() => { void loadSession(); }, []);
   async function openOrder(id: string) {
@@ -110,17 +111,17 @@ export function TeamWorkspace() {
     setSelected(order); setDraft(draftFor(order)); setPaymentPurpose(order.paid >= order.due ? 'balance' : 'initial');
     const acceptedEmailSent = order.activity?.some(a => a.message === 'Client emailed: accepted');
     setMoment(order.requestStatus === 'Declined' ? 'declined' : order.requestStatus === 'Responded' ? 'details' : order.requestStatus === 'Accepted' && acceptedEmailSent && order.paid > 0 ? 'payment' : 'accepted');
-    setPreview(null); setSendKey(''); setDeleteInput(''); setError('');
+    setPreview(null); setSendKey(''); setErrors({});
     history.replaceState(null, '', '/team-workspace/' + id);
   }
   function back() { setSelected(null); setDraft(null); setPreview(null); history.replaceState(null, '', '/team-workspace'); void loadOrders(); }
-  async function run(action: () => Promise<void>) { setBusy(true); setError(''); setNotice(''); try { await action(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }
-  async function quickStage(order: Order, value: string) { await run(async () => { await api('orders/' + order.id, 'PATCH', { status: value }); await loadOrders(); setNotice('Stage saved. No email was sent.'); }); }
-  async function save() { if (!selected || !draft) return; await run(async () => {
+  async function run(area: 'list' | 'project' | 'payment' | 'message' | 'manage', action: () => Promise<void>) { setBusy(true); setErrors(current => ({ ...current, [area]: '' })); setNotice(''); try { await action(); } catch (e) { setErrors(current => ({ ...current, [area]: (e as Error).message })); } finally { setBusy(false); } }
+  async function quickStage(order: Order, value: string) { await run('list', async () => { await api('orders/' + order.id, 'PATCH', { status: value }); await loadOrders(); setNotice('Stage saved. No email was sent.'); }); }
+  async function save() { if (!selected || !draft) return; await run('project', async () => {
     await api('orders/' + selected.id + '/manage', 'PATCH', draft);
     await openOrder(selected.id); await loadOrders(); setNotice('Saved. No email was sent.');
   }); }
-  async function recordPayment() { if (!selected) return; await run(async () => {
+  async function recordPayment() { if (!selected) return; await run('payment', async () => {
     await api('orders/' + selected.id + '/manual-payment', 'POST', { purpose: paymentPurpose, reference: paymentRef.trim() });
     setPaymentRef(''); await openOrder(selected.id); await loadOrders(); setNotice('Payment recorded. Review a client update when you are ready.');
   }); }
@@ -137,30 +138,39 @@ export function TeamWorkspace() {
     }, 400);
     return () => { window.clearTimeout(timeout); ++previewRun.current; };
   }, [selected?.id, draft, moment]);
-  async function sendEmail() { if (!selected || !draft || !sendKey || !preview || draftState !== 'ready') return; await run(async () => {
+  async function sendEmail() { if (!selected || !draft || !sendKey || !preview || draftState !== 'ready') return; await run('message', async () => {
     if (dirty) await api('orders/' + selected.id + '/manage', 'PATCH', draft);
     await api('orders/' + selected.id + '/client-update', 'POST', { moment, preview: false, requestKey: sendKey, edited: preview });
     setPreview(null); setSendKey(''); await openOrder(selected.id); setNotice('One client update sent.');
   }); }
-  async function archiveOrder(value: boolean) { if (!selected) return; await run(async () => {
+  async function archiveOrder(value: boolean) { if (!selected) return; await run('manage', async () => {
     await api('orders/' + selected.id + '/archive', 'PATCH', { archived: value }); await openOrder(selected.id); await loadOrders(); setNotice(value ? 'Order archived.' : 'Order restored.');
   }); }
-  async function deleteOrder() { if (!selected || deleteInput !== selected.reference) return; await run(async () => {
-    await api('orders/' + selected.id, 'DELETE', { confirmReference: deleteInput }); back(); setNotice('Unpaid order permanently deleted.');
+  async function deleteOrder() { if (!selected) return; await run('manage', async () => {
+    await api('orders/' + selected.id, 'DELETE'); back(); setNotice('Order deleted.');
+  }); }
+  async function bulkAction(action: 'archive' | 'restore' | 'delete') { if (!selectedIds.length) return; await run('list', async () => {
+    const result = await api('orders/bulk', 'POST', { ids: selectedIds, action });
+    setSelectedIds([]); await loadOrders(); setNotice(`${result.updated} ${result.updated === 1 ? 'order' : 'orders'} ${action === 'delete' ? 'deleted' : action === 'archive' ? 'archived' : 'restored'}.`);
   }); }
   async function signOut() { await api('session', 'DELETE'); setAuth('signed-out'); setSelected(null); setOrders([]); }
   const dirty = !!selected && !!draft && JSON.stringify(draft) !== JSON.stringify(draftFor(selected));
   const shown = orders.filter(o => !!o.archivedAt === archived && `${o.reference} ${o.customer.name} ${o.customer.email} ${o.customer.business}`.toLowerCase().includes(search.toLowerCase()));
+  const allShownSelected = shown.length > 0 && shown.every(o => selectedIds.includes(o.id));
+  const selectedOrders = orders.filter(o => selectedIds.includes(o.id));
   if (auth === 'loading') return <main className="team-login"><p>Opening team workspace…</p></main>;
   if (auth === 'signed-out') return <GoogleSignIn clientId={clientId} onSuccess={() => void loadSession()}/>;
   return <div className="team-shell">
     <header className="team-header"><a href="/"><img src="/brand/yoo360-primary-white.webp" alt="Yoo360 home"/></a><button onClick={signOut} className="team-quiet">Sign out</button></header>
     <main className="team-main"><div className="team-title"><div><span className="team-kicker">YOO360 TEAM</span><h1>Order workspace</h1></div>{selected && <button onClick={back} className="team-quiet">← All orders</button>}</div>
-      {error && <p className="team-error" role="alert">{error}</p>}{notice && <p className="team-notice" role="status">{notice}</p>}
+      {notice && <p className="team-notice" role="status">{notice}</p>}
       {!selected ? <>
-        <div className="team-toolbar"><input aria-label="Search orders" placeholder="Search by client or project number" value={search} onChange={e => setSearch(e.target.value)}/><button className="team-quiet" onClick={() => setArchived(!archived)}>{archived ? 'Active orders' : 'Archived orders'}</button><button className="team-quiet" onClick={() => void loadOrders()}>Refresh</button></div>
-        <div className="team-list" role="table" aria-label="Orders"><div className="team-row team-row-head" role="row"><span>Project</span><span>Client</span><span>Work</span><span>Payment</span><span>Action</span></div>
+        <div className="team-toolbar"><input aria-label="Search orders" placeholder="Search by client or project number" value={search} onChange={e => setSearch(e.target.value)}/><button className="team-quiet" onClick={() => { setSelectedIds([]); setArchived(!archived); }}>{archived ? 'Active orders' : 'Archived orders'}</button><button className="team-quiet" onClick={() => void loadOrders()}>Refresh</button></div>
+        <div className="team-bulk"><label><input type="checkbox" checked={allShownSelected} onChange={e => setSelectedIds(e.target.checked ? shown.map(o => o.id) : [])} aria-label="Select all visible orders"/> Select all</label>{selectedIds.length > 0 && <><strong>{selectedIds.length} selected</strong><button className="team-quiet" disabled={busy} onClick={() => void bulkAction(archived ? 'restore' : 'archive')}>{archived ? 'Restore' : 'Archive'}</button><button className="team-trash" type="button" title="Delete selected unpaid orders" aria-label="Delete selected unpaid orders" disabled={busy || selectedOrders.some(o => o.paid > 0)} onClick={() => void bulkAction('delete')}><Trash2 size={18}/></button></>}</div>
+        {errors.list && <p className="team-error" role="alert">{errors.list}</p>}
+        <div className="team-list" role="table" aria-label="Orders"><div className="team-row team-row-head" role="row"><span></span><span>Project</span><span>Client</span><span>Work</span><span>Payment</span><span>Action</span></div>
           {shown.map(o => <div className="team-row" role="row" key={o.id}>
+            <label className="team-select"><input type="checkbox" aria-label={`Select ${o.reference}`} checked={selectedIds.includes(o.id)} onChange={e => setSelectedIds(current => e.target.checked ? [...current, o.id] : current.filter(id => id !== o.id))}/></label>
             <div><button className="team-link-button" onClick={() => void openOrder(o.id)}>{o.reference}</button><small>{o.cart.service === 'logo' ? 'Brand identity' : 'Marketing & Print Design'}{o.test ? ' · TEST' : ''}</small></div>
             <div><strong>{o.customer.name || o.customer.business || 'Client'}</strong><small>{o.customer.email}</small></div>
             <div><select aria-label={`Work stage for ${o.reference}`} disabled={busy || archived} value={stages.some(s => s[0] === o.projectStatus) ? o.projectStatus : ''} onChange={e => void quickStage(o, e.target.value)}><option value="" disabled>{labelStage(o.projectStatus)}</option>{stages.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></div>
@@ -182,23 +192,24 @@ export function TeamWorkspace() {
           </section>
           <section className="team-card"><span className="team-section-label">02 / PROJECT</span><h2>Project progress</h2><p>Set the decision and the stage the client will see.</p>
             <div className="team-grid"><label>Request decision<select value={draft.requestStatus} onChange={e => { const status = e.target.value as Decision; setDraft({ ...draft, requestStatus: status }); if (status === 'Responded') setMoment('details'); if (status === 'Accepted') setMoment('accepted'); if (status === 'Declined') setMoment('declined'); }}>{(['New', 'Responded', 'Accepted', 'Declined'] as Decision[]).map(s => <option value={s} key={s}>{s === 'Responded' ? 'Need details' : s}</option>)}</select></label><label>Work stage<select value={draft.projectStatus} onChange={e => setDraft({ ...draft, projectStatus: e.target.value })}>{!stages.some(s => s[0] === draft.projectStatus) && <option value={draft.projectStatus}>{draft.projectStatus === 'Awaiting final balance' ? 'Ready, balance due' : 'Not started'}</option>}{stages.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label></div>
-            <label>Question for the client or reason for declining<textarea rows={2} value={draft.requestNote} onChange={e => setDraft({ ...draft, requestNote: e.target.value })}/></label>
+            {errors.project && <p className="team-error" role="alert">{errors.project}</p>}
           </section>
-          <section className="team-card"><span className="team-section-label">03 / PRICE AND DELIVERY</span><h2>Price and delivery</h2><p>Check these details before sharing them with the client.</p>
+          <section className="team-card"><span className="team-section-label">03 / PRICE AND PAYMENT</span><h2>Price and payment</h2><p>What this project costs and how the client can pay.</p>
+            <div className="team-metrics"><div><small>Total</small><strong>{money(draft.totalCents)}</strong></div><div><small>Received</small><strong>{money(selected.paid)}</strong></div><div><small>Remaining</small><strong>{money(Math.max(0, draft.totalCents - selected.paid))}</strong></div></div>
             <label>Project price in USD<input type="number" min="1" step="0.01" value={(draft.totalCents / 100).toFixed(2)} onChange={e => setDraft({ ...draft, totalCents: Math.round(Number(e.target.value) * 100) })} disabled={selected.paid > 0 || selected.test || selected.paymentMode !== 'manual'}/></label>
             <label>Payment method and verified account details<textarea rows={3} value={draft.paymentInstructions} onChange={e => setDraft({ ...draft, paymentInstructions: e.target.value })} placeholder="For example: Send via Mobile Money to…"/></label>
-            <label>Final files link (optional)<input type="url" value={draft.deliveryLink} onChange={e => setDraft({ ...draft, deliveryLink: e.target.value })} placeholder="https://drive.google.com/…"/></label>
-            <label>Extra note for the next email (optional)<textarea rows={2} value={draft.clientNote} onChange={e => setDraft({ ...draft, clientNote: e.target.value })}/></label>
             <button className="team-quiet" disabled={busy || !dirty} onClick={() => void save()}>Save without emailing</button>
+            {selected.paymentMode === 'manual' && !selected.test && selected.paid < selected.total && <div className="team-record-payment"><h3>Record a payment</h3><p>Check your account first. Recording a payment does not email the client.</p><div className="team-grid"><label>Amount<select value={paymentPurpose} onChange={e => setPaymentPurpose(e.target.value as typeof paymentPurpose)}>{selected.paid === 0 && <><option value="initial">Deposit · {money(selected.due)}</option><option value="full">Full amount · {money(selected.total)}</option></>}{selected.paid >= selected.due && <option value="balance">Remaining · {money(selected.total - selected.paid)}</option>}</select></label><label>Transaction reference<input value={paymentRef} onChange={e => setPaymentRef(e.target.value)}/></label></div><button className="team-quiet" disabled={busy || paymentRef.trim().length < 4} onClick={() => void recordPayment()}>Record verified payment</button></div>}
+            {errors.payment && <p className="team-error" role="alert">{errors.payment}</p>}
           </section>
-          {selected.paymentMode === 'manual' && !selected.test && selected.paid < selected.total && <section className="team-card"><h2>Record a payment</h2><p>Check your account and receipt first. This action records money; it does not email the client.</p><div className="team-grid"><label>Amount<select value={paymentPurpose} onChange={e => setPaymentPurpose(e.target.value as typeof paymentPurpose)}>{selected.paid === 0 && <><option value="initial">Deposit · {money(selected.due)}</option><option value="full">Full amount · {money(selected.total)}</option></>}{selected.paid >= selected.due && <option value="balance">Remaining · {money(selected.total - selected.paid)}</option>}</select></label><label>Transaction reference<input value={paymentRef} onChange={e => setPaymentRef(e.target.value)}/></label></div><button className="team-quiet" disabled={busy || paymentRef.trim().length < 4} onClick={() => void recordPayment()}>Record verified payment</button></section>}
           <section className="team-card team-email"><span className="team-section-label">04 / CLIENT MESSAGE</span><h2>What the client will receive</h2><p>This draft updates as you change the project. You can edit it before sending.</p><label>What’s the news?<select value={moment} onChange={e => setMoment(e.target.value as Moment)}>{moments.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
             {draftState === 'updating' && <p role="status">Updating the email draft…</p>}
             {draftState === 'error' && <p className="team-draft-error" role="status">{draftError}</p>}
             {preview && <div className="team-preview"><label>Email subject<input aria-label="Email subject" value={preview.subject} maxLength={150} onChange={e => setPreview({ ...preview, subject: e.target.value })}/></label><label>Email message<textarea aria-label="Email message" rows={12} maxLength={4000} value={preview.body} onChange={e => setPreview({ ...preview, body: e.target.value })}/></label><small>The private project link and reference are added automatically.</small></div>}
             <div className="team-actions"><button className="team-primary" disabled={busy || !preview || draftState !== 'ready' || preview.subject.trim().length < 3 || preview.body.trim().length < 10} onClick={() => void sendEmail()}>Confirm and send this email</button></div><small>We save your changes first. Nothing is emailed until you confirm.</small>
+            {errors.message && <p className="team-error" role="alert">{errors.message}</p>}
           </section>
-          <section className="team-card team-manage"><h2>Manage order</h2><button className="team-quiet" disabled={busy} onClick={() => void archiveOrder(!selected.archivedAt)}>{selected.archivedAt ? 'Restore order' : 'Archive order'}</button>{selected.paid === 0 && <details><summary>Delete an unpaid order permanently</summary><p>Use this for a test or duplicate. This removes the order, brief and files. It cannot be undone.</p><label>Type {selected.reference} to confirm<input value={deleteInput} onChange={e => setDeleteInput(e.target.value)}/></label><button className="team-delete" disabled={busy || deleteInput !== selected.reference} onClick={() => void deleteOrder()}>Delete permanently</button></details>}</section>
+          <section className="team-card team-manage"><h2>Manage order</h2><div className="team-actions"><button className="team-quiet" disabled={busy} onClick={() => void archiveOrder(!selected.archivedAt)}>{selected.archivedAt ? 'Restore order' : 'Archive order'}</button>{selected.paid === 0 && <button className="team-trash" type="button" title="Delete this unpaid order" aria-label="Delete this unpaid order" disabled={busy} onClick={() => void deleteOrder()}><Trash2 size={18}/></button>}</div>{errors.manage && <p className="team-error" role="alert">{errors.manage}</p>}</section>
         </div>
       </div>}
     </main>
