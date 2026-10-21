@@ -90,7 +90,10 @@ export function TeamWorkspace() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [moment, setMoment] = useState<Moment>('accepted');
-  const [preview, setPreview] = useState<{ subject: string; text: string } | null>(null);
+  const [preview, setPreview] = useState<{ subject: string; body: string } | null>(null);
+  const [draftState, setDraftState] = useState<'idle' | 'updating' | 'ready' | 'error'>('idle');
+  const [draftError, setDraftError] = useState('');
+  const previewRun = useRef(0);
   const [sendKey, setSendKey] = useState('');
   const [paymentRef, setPaymentRef] = useState('');
   const [paymentPurpose, setPaymentPurpose] = useState<'initial' | 'full' | 'balance'>('initial');
@@ -121,12 +124,22 @@ export function TeamWorkspace() {
     await api('orders/' + selected.id + '/manual-payment', 'POST', { purpose: paymentPurpose, reference: paymentRef.trim() });
     setPaymentRef(''); await openOrder(selected.id); await loadOrders(); setNotice('Payment recorded. Review a client update when you are ready.');
   }); }
-  async function previewEmail() { if (!selected) return; await run(async () => {
-    const result = await api('orders/' + selected.id + '/client-update', 'POST', { moment, preview: true });
-    setPreview(result); setSendKey(crypto.randomUUID());
-  }); }
-  async function sendEmail() { if (!selected || !sendKey || !preview) return; await run(async () => {
-    await api('orders/' + selected.id + '/client-update', 'POST', { moment, preview: false, requestKey: sendKey });
+  useEffect(() => {
+    if (!selected || !draft) return;
+    const runId = ++previewRun.current;
+    setDraftState('updating'); setDraftError(''); setPreview(null); setSendKey('');
+    const timeout = window.setTimeout(async () => {
+      try {
+        const result = await api('orders/' + selected.id + '/client-update', 'POST', { moment, preview: true, draft });
+        if (runId !== previewRun.current) return;
+        setPreview({ subject: result.subject, body: result.body }); setSendKey(crypto.randomUUID()); setDraftState('ready');
+      } catch (e) { if (runId === previewRun.current) { setDraftState('error'); setDraftError((e as Error).message); } }
+    }, 400);
+    return () => { window.clearTimeout(timeout); ++previewRun.current; };
+  }, [selected?.id, draft, moment]);
+  async function sendEmail() { if (!selected || !draft || !sendKey || !preview || draftState !== 'ready') return; await run(async () => {
+    if (dirty) await api('orders/' + selected.id + '/manage', 'PATCH', draft);
+    await api('orders/' + selected.id + '/client-update', 'POST', { moment, preview: false, requestKey: sendKey, edited: preview });
     setPreview(null); setSendKey(''); await openOrder(selected.id); setNotice('One client update sent.');
   }); }
   async function archiveOrder(value: boolean) { if (!selected) return; await run(async () => {
@@ -164,20 +177,26 @@ export function TeamWorkspace() {
           <details><summary>Payment history and activity</summary>{selected.payments.map(p => <p key={p.id}>{p.amount} {p.currency} · {p.status} · {new Date(p.created_at).toLocaleDateString()}</p>)}{selected.activity.map(a => <p key={a.id}>{a.message}</p>)}</details>
         </section>
         <div className="team-stack">
-          <section className="team-card"><h2>Project details</h2><p>Save changes here. The client won’t be emailed until you review and send an update.</p>
+          <section className="team-card"><span className="team-section-label">01 / CLIENT</span><h2>Client information</h2><p>Who placed this request and where we can reach them.</p>
             <div className="team-grid"><label>Name<input value={draft.customer.name} onChange={e => setDraft({ ...draft, customer: { ...draft.customer, name: e.target.value } })}/></label><label>Email<input type="email" value={draft.customer.email} onChange={e => setDraft({ ...draft, customer: { ...draft.customer, email: e.target.value } })}/></label><label>Phone<input value={draft.customer.phone} onChange={e => setDraft({ ...draft, customer: { ...draft.customer, phone: e.target.value } })}/></label><label>Business<input value={draft.customer.business} onChange={e => setDraft({ ...draft, customer: { ...draft.customer, business: e.target.value } })}/></label></div>
-            <div className="team-grid"><label>Request decision<select value={draft.requestStatus} onChange={e => setDraft({ ...draft, requestStatus: e.target.value as Decision })}>{(['New', 'Responded', 'Accepted', 'Declined'] as Decision[]).map(s => <option value={s} key={s}>{s === 'Responded' ? 'Need details' : s}</option>)}</select></label><label>Work stage<select value={draft.projectStatus} onChange={e => setDraft({ ...draft, projectStatus: e.target.value })}>{!stages.some(s => s[0] === draft.projectStatus) && <option value={draft.projectStatus}>{draft.projectStatus === 'Awaiting final balance' ? 'Ready, balance due' : 'Not started'}</option>}{stages.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label></div>
+          </section>
+          <section className="team-card"><span className="team-section-label">02 / PROJECT</span><h2>Project progress</h2><p>Set the decision and the stage the client will see.</p>
+            <div className="team-grid"><label>Request decision<select value={draft.requestStatus} onChange={e => { const status = e.target.value as Decision; setDraft({ ...draft, requestStatus: status }); if (status === 'Responded') setMoment('details'); if (status === 'Accepted') setMoment('accepted'); if (status === 'Declined') setMoment('declined'); }}>{(['New', 'Responded', 'Accepted', 'Declined'] as Decision[]).map(s => <option value={s} key={s}>{s === 'Responded' ? 'Need details' : s}</option>)}</select></label><label>Work stage<select value={draft.projectStatus} onChange={e => setDraft({ ...draft, projectStatus: e.target.value })}>{!stages.some(s => s[0] === draft.projectStatus) && <option value={draft.projectStatus}>{draft.projectStatus === 'Awaiting final balance' ? 'Ready, balance due' : 'Not started'}</option>}{stages.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label></div>
+            <label>Question for the client or reason for declining<textarea rows={2} value={draft.requestNote} onChange={e => setDraft({ ...draft, requestNote: e.target.value })}/></label>
+          </section>
+          <section className="team-card"><span className="team-section-label">03 / PRICE AND DELIVERY</span><h2>Price and delivery</h2><p>Check these details before sharing them with the client.</p>
             <label>Project price in USD<input type="number" min="1" step="0.01" value={(draft.totalCents / 100).toFixed(2)} onChange={e => setDraft({ ...draft, totalCents: Math.round(Number(e.target.value) * 100) })} disabled={selected.paid > 0 || selected.test || selected.paymentMode !== 'manual'}/></label>
             <label>Payment method and verified account details<textarea rows={3} value={draft.paymentInstructions} onChange={e => setDraft({ ...draft, paymentInstructions: e.target.value })} placeholder="For example: Send via Mobile Money to…"/></label>
-            <label>Note to client or reason if declined<textarea rows={2} value={draft.requestNote} onChange={e => setDraft({ ...draft, requestNote: e.target.value })}/></label>
             <label>Final files link (optional)<input type="url" value={draft.deliveryLink} onChange={e => setDraft({ ...draft, deliveryLink: e.target.value })} placeholder="https://drive.google.com/…"/></label>
             <label>Extra note for the next email (optional)<textarea rows={2} value={draft.clientNote} onChange={e => setDraft({ ...draft, clientNote: e.target.value })}/></label>
-            <button className="team-primary" disabled={busy || !dirty} onClick={() => void save()}>Save changes</button>
+            <button className="team-quiet" disabled={busy || !dirty} onClick={() => void save()}>Save without emailing</button>
           </section>
           {selected.paymentMode === 'manual' && !selected.test && selected.paid < selected.total && <section className="team-card"><h2>Record a payment</h2><p>Check your account and receipt first. This action records money; it does not email the client.</p><div className="team-grid"><label>Amount<select value={paymentPurpose} onChange={e => setPaymentPurpose(e.target.value as typeof paymentPurpose)}>{selected.paid === 0 && <><option value="initial">Deposit · {money(selected.due)}</option><option value="full">Full amount · {money(selected.total)}</option></>}{selected.paid >= selected.due && <option value="balance">Remaining · {money(selected.total - selected.paid)}</option>}</select></label><label>Transaction reference<input value={paymentRef} onChange={e => setPaymentRef(e.target.value)}/></label></div><button className="team-quiet" disabled={busy || paymentRef.trim().length < 4} onClick={() => void recordPayment()}>Record verified payment</button></section>}
-          <section className="team-card"><h2>Tell the client</h2><p>One clear update after you’ve saved the details that matter.</p><label>What’s the news?<select value={moment} onChange={e => { setMoment(e.target.value as Moment); setPreview(null); }}>{moments.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
-            {preview && <div className="team-preview"><strong>{preview.subject}</strong><p>{preview.text}</p></div>}
-            <div className="team-actions"><button className="team-quiet" disabled={busy || dirty} onClick={() => void previewEmail()}>Review client email</button><button className="team-primary" disabled={busy || !preview || dirty} onClick={() => void sendEmail()}>Confirm and send one email</button></div>{dirty && <small>Save your changes before reviewing the email.</small>}
+          <section className="team-card team-email"><span className="team-section-label">04 / CLIENT MESSAGE</span><h2>What the client will receive</h2><p>This draft updates as you change the project. You can edit it before sending.</p><label>What’s the news?<select value={moment} onChange={e => setMoment(e.target.value as Moment)}>{moments.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
+            {draftState === 'updating' && <p role="status">Updating the email draft…</p>}
+            {draftState === 'error' && <p className="team-draft-error" role="status">{draftError}</p>}
+            {preview && <div className="team-preview"><label>Email subject<input aria-label="Email subject" value={preview.subject} maxLength={150} onChange={e => setPreview({ ...preview, subject: e.target.value })}/></label><label>Email message<textarea aria-label="Email message" rows={12} maxLength={4000} value={preview.body} onChange={e => setPreview({ ...preview, body: e.target.value })}/></label><small>The private project link and reference are added automatically.</small></div>}
+            <div className="team-actions"><button className="team-primary" disabled={busy || !preview || draftState !== 'ready' || preview.subject.trim().length < 3 || preview.body.trim().length < 10} onClick={() => void sendEmail()}>Confirm and send this email</button></div><small>We save your changes first. Nothing is emailed until you confirm.</small>
           </section>
           <section className="team-card team-manage"><h2>Manage order</h2><button className="team-quiet" disabled={busy} onClick={() => void archiveOrder(!selected.archivedAt)}>{selected.archivedAt ? 'Restore order' : 'Archive order'}</button>{selected.paid === 0 && <details><summary>Delete an unpaid order permanently</summary><p>Use this for a test or duplicate. This removes the order, brief and files. It cannot be undone.</p><label>Type {selected.reference} to confirm<input value={deleteInput} onChange={e => setDeleteInput(e.target.value)}/></label><button className="team-delete" disabled={busy || deleteInput !== selected.reference} onClick={() => void deleteOrder()}>Delete permanently</button></details>}</section>
         </div>
