@@ -44,6 +44,16 @@ function draftFor(o: Order): Draft { return {
   customer: { name: o.customer.name || '', email: o.customer.email || '', phone: o.customer.phone || '', business: o.customer.business || '' },
 }; }
 function labelStage(stage: string) { return stages.find(s => s[0] === stage)?.[1] || 'Not started'; }
+function activityLabel(message: string) {
+  if (message.startsWith('Brief email accepted')) return 'Project brief received';
+  if (message.startsWith('Request email accepted')) return 'Request confirmation sent';
+  if (message.startsWith('Client request received')) return 'Client placed a request';
+  if (message.startsWith('Manager saved order details')) return 'Project details updated';
+  if (message.startsWith('Client update requested:')) return 'Client update prepared';
+  if (message.startsWith('Client emailed:')) return 'Client email sent: ' + message.split(':').at(-1)?.trim();
+  return message;
+}
+const needsQuestion = (body: string) => body.includes('[Write the exact question for this client here.');
 function paymentLabel(order: Order) { return order.paid === 0 ? 'Unpaid' : order.paid >= order.total ? 'Paid in full' : 'Deposit received'; }
 
 function GoogleSignIn({ clientId, onSuccess }: { clientId: string; onSuccess: () => void }) {
@@ -141,7 +151,7 @@ export function TeamWorkspace() {
   async function sendEmail() { if (!selected || !draft || !sendKey || !preview || draftState !== 'ready') return; await run('message', async () => {
     if (dirty) await api('orders/' + selected.id + '/manage', 'PATCH', draft);
     await api('orders/' + selected.id + '/client-update', 'POST', { moment, preview: false, requestKey: sendKey, edited: preview });
-    setPreview(null); setSendKey(''); await openOrder(selected.id); setNotice('One client update sent.');
+    setPreview(null); setSendKey(''); await openOrder(selected.id); setNotice(`Email sent to ${selected.customer.email}.`);
   }); }
   async function archiveOrder(value: boolean) { if (!selected) return; await run('manage', async () => {
     await api('orders/' + selected.id + '/archive', 'PATCH', { archived: value }); await openOrder(selected.id); await loadOrders(); setNotice(value ? 'Order archived.' : 'Order restored.');
@@ -163,7 +173,7 @@ export function TeamWorkspace() {
   return <div className="team-shell">
     <header className="team-header"><a href="/"><img src="/brand/yoo360-primary-white.webp" alt="Yoo360 home"/></a><button onClick={signOut} className="team-quiet">Sign out</button></header>
     <main className="team-main"><div className="team-title"><div><span className="team-kicker">YOO360 TEAM</span><h1>Order workspace</h1></div>{selected && <button onClick={back} className="team-quiet">← All orders</button>}</div>
-      {notice && <p className="team-notice" role="status">{notice}</p>}
+      {notice && <div className="team-notice team-toast" role="status"><span>✓ {notice}</span><button type="button" aria-label="Dismiss confirmation" onClick={() => setNotice('')}>×</button></div>}
       {!selected ? <>
         <div className="team-toolbar"><input aria-label="Search orders" placeholder="Search by client or project number" value={search} onChange={e => setSearch(e.target.value)}/><button className="team-quiet" onClick={() => { setSelectedIds([]); setArchived(!archived); }}>{archived ? 'Active orders' : 'Archived orders'}</button><button className="team-quiet" onClick={() => void loadOrders()}>Refresh</button></div>
         <div className="team-bulk"><label><input type="checkbox" checked={allShownSelected} onChange={e => setSelectedIds(e.target.checked ? shown.map(o => o.id) : [])} aria-label="Select all visible orders"/> Select all</label>{selectedIds.length > 0 && <><strong>{selectedIds.length} selected</strong><button className="team-quiet" disabled={busy} onClick={() => void bulkAction(archived ? 'restore' : 'archive')}>{archived ? 'Restore' : 'Archive'}</button><button className="team-trash" type="button" title="Delete selected unpaid orders" aria-label="Delete selected unpaid orders" disabled={busy || selectedOrders.some(o => o.paid > 0)} onClick={() => void bulkAction('delete')}><Trash2 size={18}/></button></>}</div>
@@ -184,7 +194,7 @@ export function TeamWorkspace() {
           <div className="team-metrics"><div><small>Project total</small><strong>{money(selected.total)}</strong></div><div><small>Received</small><strong>{money(selected.paid)}</strong></div><div><small>Remaining</small><strong>{money(selected.total - selected.paid)}</strong></div></div>
           <details><summary>What the client ordered</summary>{orderLines(selected.cart).map((line, i) => <p key={i}>{line.name} · {money(line.cents)}</p>)}</details>
           <details><summary>Client brief · {selected.briefStatus}</summary>{Object.entries(selected.brief).map(([key, answers]) => <div key={key}><h3>{key === 'logo' ? 'Logo' : selected.cart.artworks.find(a => a.id === key)?.name || 'Design'}</h3>{Object.entries(answers).map(([question, answer]) => <p key={question}><b>{question.replace(/([A-Z])/g, ' $1')}:</b> {answer}</p>)}</div>)}</details>
-          <details><summary>Payment history and activity</summary>{selected.payments.map(p => <p key={p.id}>{p.amount} {p.currency} · {p.status} · {new Date(p.created_at).toLocaleDateString()}</p>)}{selected.activity.map(a => <p key={a.id}>{a.message}</p>)}</details>
+          <section className="team-timeline" aria-label="Project timeline"><h3>Project timeline</h3><ol>{[...selected.activity].reverse().map(a => <li key={a.id}><time dateTime={a.created_at}>{new Date(a.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time><span>{activityLabel(a.message)}</span></li>)}</ol>{selected.payments.length > 0 && <details><summary>Payment history</summary>{selected.payments.map(p => <p key={p.id}>{p.amount} {p.currency} · {p.status} · {new Date(p.created_at).toLocaleDateString()}</p>)}</details>}</section>
         </section>
         <div className="team-stack">
           <section className="team-card"><span className="team-section-label">01 / CLIENT</span><h2>Client information</h2><p>Who placed this request and where we can reach them.</p>
@@ -205,8 +215,8 @@ export function TeamWorkspace() {
           <section className="team-card team-email"><span className="team-section-label">04 / CLIENT MESSAGE</span><h2>What the client will receive</h2><p>This draft updates as you change the project. You can edit it before sending.</p><label>What’s the news?<select value={moment} onChange={e => setMoment(e.target.value as Moment)}>{moments.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
             {draftState === 'updating' && <p role="status">Updating the email draft…</p>}
             {draftState === 'error' && <p className="team-draft-error" role="status">{draftError}</p>}
-            {preview && <div className="team-preview"><label>Email subject<input aria-label="Email subject" value={preview.subject} maxLength={150} onChange={e => setPreview({ ...preview, subject: e.target.value })}/></label><label>Email message<textarea aria-label="Email message" rows={12} maxLength={4000} value={preview.body} onChange={e => setPreview({ ...preview, body: e.target.value })}/></label><small>The private project link and reference are added automatically.</small></div>}
-            <div className="team-actions"><button className="team-primary" disabled={busy || !preview || draftState !== 'ready' || preview.subject.trim().length < 3 || preview.body.trim().length < 10} onClick={() => void sendEmail()}>Confirm and send this email</button></div><small>We save your changes first. Nothing is emailed until you confirm.</small>
+            {preview && <div className="team-preview"><label>Email subject<input aria-label="Email subject" value={preview.subject} maxLength={150} onChange={e => setPreview({ ...preview, subject: e.target.value })}/></label><label>Email message<textarea aria-label="Email message" rows={12} maxLength={4000} value={preview.body} onChange={e => setPreview({ ...preview, body: e.target.value })}/></label><small>The private project link and reference are added automatically.</small>{moment === 'details' && preview && needsQuestion(preview.body) && <p className="team-draft-error" role="alert">Replace the bracketed instruction with the exact question you want to ask this client.</p>}</div>}
+            <div className="team-actions"><button className="team-primary" disabled={busy || !preview || draftState !== 'ready' || preview.subject.trim().length < 3 || preview.body.trim().length < 10 || (moment === 'details' && needsQuestion(preview.body))} onClick={() => void sendEmail()}>Confirm and send this email</button></div><small>We save your changes first. Nothing is emailed until you confirm.</small>
             {errors.message && <p className="team-error" role="alert">{errors.message}</p>}
           </section>
           <section className="team-card team-manage"><h2>Manage order</h2><div className="team-actions"><button className="team-quiet" disabled={busy} onClick={() => void archiveOrder(!selected.archivedAt)}>{selected.archivedAt ? 'Restore order' : 'Archive order'}</button>{selected.paid === 0 && <button className="team-trash" type="button" title="Delete this unpaid order" aria-label="Delete this unpaid order" disabled={busy} onClick={() => void deleteOrder()}><Trash2 size={18}/></button>}</div>{errors.manage && <p className="team-error" role="alert">{errors.manage}</p>}</section>
