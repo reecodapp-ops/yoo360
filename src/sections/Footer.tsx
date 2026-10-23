@@ -48,9 +48,9 @@ export default function Footer({ subpage = false }: { subpage?: boolean }) {
             ))}
           </div>
 
-          <p className="text-xs text-[#F6F4EE]/40">
+          <div className="flex items-center gap-5"><a href="/team-workspace" rel="nofollow" className="text-xs text-[#F6F4EE]/50 transition-colors hover:text-[#FFC700]">Team sign in</a><p className="text-xs text-[#F6F4EE]/40">
             © {new Date().getFullYear()} Yoo360. All rights reserved.
-          </p>
+          </p></div>
         </div>
       </div>
     </footer>

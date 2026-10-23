@@ -171,14 +171,20 @@ export function TeamWorkspace() {
     await api('orders/' + selected.id, 'DELETE'); back(); setNotice('Order deleted.');
   }); }
   async function bulkAction(action: 'archive' | 'restore' | 'delete') { if (!selectedIds.length) return; await run('list', async () => {
-    const result = await api('orders/bulk', 'POST', { ids: selectedIds, action });
-    setSelectedIds([]); await loadOrders(); setNotice(`${result.updated} ${result.updated === 1 ? 'order' : 'orders'} ${action === 'delete' ? 'deleted' : action === 'archive' ? 'archived' : 'restored'}.`);
+    const eligibleIds = action === 'delete' ? selectedIds.filter(id => orders.find(o => o.id === id)?.paid === 0) : selectedIds;
+    if (!eligibleIds.length) throw new Error('Paid orders keep their payment history. Archive them to clear your active list.');
+    const result = await api('orders/bulk', 'POST', { ids: eligibleIds, action });
+    setSelectedIds(action === 'delete' ? selectedIds.filter(id => !eligibleIds.includes(id)) : []); await loadOrders();
+    const kept = action === 'delete' ? selectedIds.length - eligibleIds.length : 0;
+    setNotice(`${result.updated} ${result.updated === 1 ? 'order' : 'orders'} ${action === 'delete' ? 'deleted' : action === 'archive' ? 'archived' : 'restored'}.${kept ? ` ${kept} paid ${kept === 1 ? 'order was' : 'orders were'} kept for payment history.` : ''}`);
   }); }
   async function signOut() { await api('session', 'DELETE'); setAuth('signed-out'); setSelected(null); setOrders([]); }
   const dirty = !!selected && !!draft && JSON.stringify(draft) !== JSON.stringify(draftFor(selected));
   const shown = orders.filter(o => !!o.archivedAt === archived && `${o.reference} ${o.customer.name} ${o.customer.email} ${o.customer.business}`.toLowerCase().includes(search.toLowerCase()));
   const allShownSelected = shown.length > 0 && shown.every(o => selectedIds.includes(o.id));
   const selectedOrders = orders.filter(o => selectedIds.includes(o.id));
+  const unpaidSelected = selectedOrders.filter(o => o.paid === 0).length;
+  const paidSelected = selectedOrders.length - unpaidSelected;
   if (auth === 'loading') return <main className="team-login"><p>Opening team workspace…</p></main>;
   if (auth === 'signed-out') return <GoogleSignIn clientId={clientId} onSuccess={() => void loadSession()}/>;
   return <div className="team-shell">
@@ -187,7 +193,7 @@ export function TeamWorkspace() {
       {notice && <div className="team-notice team-toast" role="status"><span>✓ {notice}</span><button type="button" aria-label="Dismiss confirmation" onClick={() => setNotice('')}>×</button></div>}
       {!selected ? <>
         <div className="team-toolbar"><input aria-label="Search orders" placeholder="Search by client or project number" value={search} onChange={e => setSearch(e.target.value)}/><button className="team-quiet" onClick={() => { setSelectedIds([]); setArchived(!archived); }}>{archived ? 'Active orders' : 'Archived orders'}</button><button className="team-quiet" onClick={() => void loadOrders()}>Refresh</button></div>
-        <div className="team-bulk"><label><input type="checkbox" checked={allShownSelected} onChange={e => setSelectedIds(e.target.checked ? shown.map(o => o.id) : [])} aria-label="Select all visible orders"/> Select all</label>{selectedIds.length > 0 && <><strong>{selectedIds.length} selected</strong><button className="team-quiet" disabled={busy} onClick={() => void bulkAction(archived ? 'restore' : 'archive')}>{archived ? 'Restore' : 'Archive'}</button><button className="team-trash" type="button" title="Delete selected unpaid orders" aria-label="Delete selected unpaid orders" disabled={busy || selectedOrders.some(o => o.paid > 0)} onClick={() => void bulkAction('delete')}><Trash2 size={18}/></button></>}</div>
+        <div className="team-bulk"><label><input type="checkbox" checked={allShownSelected} onChange={e => setSelectedIds(e.target.checked ? shown.map(o => o.id) : [])} aria-label="Select all visible orders"/> Select all</label>{selectedIds.length > 0 && <><strong>{selectedIds.length} selected</strong><button className="team-quiet" disabled={busy} onClick={() => void bulkAction(archived ? 'restore' : 'archive')}>{archived ? 'Restore' : 'Archive'}</button><button className="team-trash" type="button" title={unpaidSelected ? `Delete ${unpaidSelected} unpaid selected ${unpaidSelected === 1 ? "order" : "orders"}` : "Paid orders cannot be deleted. Archive them instead."} aria-label={`Delete ${unpaidSelected} selected unpaid ${unpaidSelected === 1 ? "order" : "orders"}`} disabled={busy || unpaidSelected === 0} onClick={() => void bulkAction('delete')}><Trash2 size={18}/></button>{paidSelected > 0 && <small className="team-bulk-hint">{paidSelected} paid {paidSelected === 1 ? "order stays" : "orders stay"} in the payment record. Archive to clear {paidSelected === 1 ? "it" : "them"} from the active list.</small>}</>}</div>
         {errors.list && <p className="team-error" role="alert">{errors.list}</p>}
         <div className="team-list" role="table" aria-label="Orders"><div className="team-row team-row-head" role="row"><span></span><span>Project</span><span>Client</span><span>Work</span><span>Payment</span><span>Action</span></div>
           {shown.map(o => <div className="team-row" role="row" key={o.id}>
